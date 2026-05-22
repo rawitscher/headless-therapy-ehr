@@ -34,8 +34,10 @@ Keep messages short. One block of questions at a time. Use checklists. Never pas
 
 ```
 Hey! Happy to help you build a headless Salesforce demo — same pattern
-Lauren Rawitscher used for the CCG demo (React app + Patient 360 +
-Agentforce copilot + real CRM data).
+Lauren Rawitscher used for the CCG behavioral health demo. Works across
+industries (banking, retail, public sector, field service, prof
+services, etc.) — Cursor will pick the right vertical playbook based on
+your customer.
 
 Here's how this works:
   1. I'll ask 2 quick questions to make sure you can start
@@ -44,8 +46,12 @@ Here's how this works:
      project scaffolding) and then walk you through the build
 
 Realistic time budget:
-  • ~4 hours to a working demo if you cut corners
-  • Full day for something polished
+  • Your active time (~1.5–2 hours): scoping, manual org toggles in
+    Salesforce Setup, testing the demo, customizing copy
+  • Cursor's time running in the background (~2–3 hours): scaffolding,
+    building pages, deploying metadata, configuring the agent
+  • Total wall-clock: ~4 hours to a working demo, full day for polish
+  • You can step away during long builds/deploys — Cursor will wait
 
 Ready? Two questions:
 ```
@@ -54,20 +60,31 @@ Ready? Two questions:
 
 ```
 1. Do you have Cursor IDE installed? (yes/no)
-2. Do you have access to a Salesforce org you can deploy to?
-   (SDO, scratch org, or sandbox — and you can log into it via browser)
+2. Do you have a Salesforce Developer Edition (DE) org with Dev Hub
+   enabled? (yes/no)
+
+⚠️ Heads up: SDOs and standard DE orgs DON'T work for this demo —
+the React Multi-Framework Beta toggle only appears in scratch orgs.
+A DE org with Dev Hub enabled lets you spin up scratch orgs. Cursor
+will create the actual scratch org for you later.
 ```
 
 **If "no" to Cursor:**
 > Install it from https://cursor.com first, then come back. Takes 2 min.
 
-**If "no" to org access:**
-> You need an org first. Options:
-> - Ask in `#ask-sdo` for a Salesforce Demo Org (mention "headless React demo with Agentforce")
-> - Spin up a Developer Edition: https://developer.salesforce.com/signup
-> - Use a scratch org if you have Dev Hub access (ask your manager)
+**If "no" to a DE org with Dev Hub:**
+> You need a Developer Edition org with Dev Hub enabled — it's the
+> parent that lets Cursor create scratch orgs for you. Steps:
 >
-> Come back once you can log into the org in a browser.
+> 1. Sign up for a free DE org at https://developer.salesforce.com/signup
+>    (use your personal email, NOT a Salesforce.com address)
+> 2. In the new org: Setup → Quick Find → "Dev Hub" → toggle
+>    **Enable Dev Hub** → Save
+> 3. Log into the DE org via the `sf` CLI later (Cursor will guide you)
+>
+> Full instructions: see `ccg-demo/How to Get a Scratch Org for
+> Headless Salesforce Demo Dev.pdf` in the repo. Come back once your
+> DE org has Dev Hub enabled.
 
 **If both "yes":** continue to Step 3.
 
@@ -78,7 +95,8 @@ Ready? Two questions:
 This is the **whole magic** — one message that gets pasted into Cursor and bootstraps everything. Send this to the teammate:
 
 ````
-Perfect. Open Cursor → New Chat → paste this entire prompt:
+Perfect. In Cursor, open a New Chat (Cmd+N or click the + in the chat
+panel) and paste this entire prompt:
 
 ---PASTE BELOW THIS LINE---
 
@@ -109,15 +127,25 @@ Please handle the full setup automatically:
    from where you left off when I come back.
 
 6. After restart, **use the `building-headless-salesforce-demo` skill**
-   and walk me through the Phase 1 scoping questions (customer, target
-   tool UX, persona, demo date, brand color, org alias).
+   and walk me through the Phase 1 scoping questions (customer, industry,
+   target tool UX, persona, demo date, brand color). Use the matching
+   vertical playbook from the skill's `industry-playbooks.md`.
 
-7. Once we've scoped, **stop and tell me exactly which manual toggles
-   to flip in Salesforce Setup** before we start building (the React
-   Multi-Framework Beta, Einstein, Agentforce, and the My Domain cookie
-   setting). Don't try to flip these yourself — they're UI-only.
+7. **Help me log into my Dev Hub** (`sf org login web --set-default-dev-hub`)
+   and then **create a scratch org** following the steps in
+   `~/headless-therapy-ehr/ccg-demo/How to Get a Scratch Org for Headless
+   Salesforce Demo Dev.pdf`. Use the minimal `project-scratch-def.json`
+   from that doc — features only: `Einstein1AIPlatform`. Don't add
+   DataCloud or Agentforce as features.
 
-8. After I confirm the toggles, drive the rest of the build, asking
+8. Once the scratch org is created, **stop and tell me exactly which
+   manual toggles to flip in Salesforce Setup** — pull the exact list
+   from that same PDF (Digital Experience, Customize Application
+   permission set, React Multi-Framework Beta, Einstein, Agentforce,
+   My Domain cookie setting). Don't try to flip these yourself —
+   they're UI-only.
+
+9. After I confirm the toggles, drive the rest of the build, asking
    for input only when needed. Default to demo-safe choices: static
    data, screenshot Flow, agent with 3 subagents.
 
@@ -138,18 +166,24 @@ After they paste, send this short standby message:
 
 ```
 👍 Cursor's driving now. Heads up — it WILL pause and ask you to do
-these things manually in the Salesforce UI (it can't click around in
-Setup for you):
+these things manually in your scratch org's Salesforce UI (it can't
+click around in Setup for you):
 
-  □ Setup → Vibes Settings → enable "React Development with Agentforce
-    Vibes and Salesforce Multi-Framework (Beta)"
+  □ Setup → Digital Experience → Enable (then create a placeholder
+    site — back out without picking a template; this seeds required
+    dependencies)
+  □ Setup → Permission Sets → New → add "Customize Application"
+    system permission → assign to yourself
+  □ Setup → Quick Find "React" → enable "React Development with
+    Agentforce Vibes and Salesforce Multi-Framework (Beta)"
   □ Setup → Einstein → Turn on Einstein
   □ Setup → Agentforce → Turn on Agentforce
   □ Setup → My Domain → uncheck "Require first party use of Salesforce
     cookies" (critical — chat widget breaks without it)
 
-Also, when Cursor asks you to authenticate with `sf org login web`, a
-browser will open — log in to the org you want to deploy to.
+Also, expect two browser logins from `sf org login web` — first your
+Dev Hub (so Cursor can create the scratch org), then the scratch org
+itself (so Cursor can deploy to it).
 
 I'm here if you hit a wall. Good luck! 🚀
 ```
