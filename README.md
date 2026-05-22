@@ -1,8 +1,8 @@
 # headless-therapy-ehr
 
-A reference implementation + reusable Cursor skill for building **custom-branded, "headless" Salesforce demos** that mirror vertical-SaaS UX (think TherapyNotes / ServiceNow / Workday) on top of the platform.
+A reference implementation + reusable Cursor skill for building **custom-branded, "headless" Salesforce demos** that mirror vertical-SaaS UX (think TherapyNotes / nCino / ServiceNow / Toast / Tyler) on top of the platform.
 
-Built as a 4-hour proof of concept for a behavioral-health customer (The Counseling Center Group). The same pattern works for any customer that says *"we like our current UI but we know we need a real platform underneath."*
+**Industry-agnostic.** The Cursor skill ships with [vertical playbooks](.cursor/skills/building-headless-salesforce-demo/industry-playbooks.md) for financial services, retail, public sector, healthcare, manufacturing/field service, and professional services — each with persona, hero page, custom fields, AI insight cards, automation wins, and brand cues. Built as a 4-hour proof of concept for a behavioral-health customer (The Counseling Center Group); the **same pattern works for any customer** that says *"we like our current UI but we know we need a real platform underneath."*
 
 ## What's here
 

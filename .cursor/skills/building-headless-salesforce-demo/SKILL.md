@@ -1,21 +1,25 @@
 ---
 name: building-headless-salesforce-demo
-description: Build a custom-branded "headless" Salesforce demo for a specific customer using the React UI Bundle (Multi-Framework Beta), Agentforce, Flow, and real CRM data. Use when an SE or AE asks to build a customer-tailored demo where the customer doesn't want Salesforce UX, when the prompt mentions Headless360, TherapyNotes-style, ServiceNow-style, custom UI on Salesforce, React multi-framework, UI Bundle, or AgentforceConversationClient, or when the demo narrative is "you can have the UI you want without giving up the platform you need."
+description: Build a custom-branded "headless" Salesforce demo for a specific customer using the React UI Bundle (Multi-Framework Beta), Agentforce, Flow, and real CRM data. Industry-agnostic — supports financial services, retail, public sector, healthcare, manufacturing/field service, professional services, and more. Use when an SE or AE asks to build a customer-tailored demo where the customer doesn't want Salesforce UX, when the prompt mentions Headless360, TherapyNotes-style, ServiceNow-style, banker/teller/dispatcher/agent/caseworker/associate UX, custom UI on Salesforce, React multi-framework, UI Bundle, or AgentforceConversationClient, or when the demo narrative is "you can have the UI you want without giving up the platform you need."
 ---
 
 # Building a Headless Salesforce Customer Demo
 
-This skill captures the end-to-end pattern for building a beautifully custom-branded React app on Salesforce, deployed via the UI Bundle Multi-Framework (Beta), with a working Agentforce copilot and live CRM data. Validated against a real customer demo (mid-2026, behavioral health vertical, 5-day build compressed to 4 hours).
+This skill captures the end-to-end pattern for building a beautifully custom-branded React app on Salesforce, deployed via the UI Bundle Multi-Framework (Beta), with a working Agentforce copilot and live CRM data.
+
+Works across industries — see [industry-playbooks.md](industry-playbooks.md) for vertical-specific scaffolding (personas, custom fields, AI insight cards, automation wins) for financial services, retail, public sector, healthcare, manufacturing/field service, and professional services.
+
+Validated against a real customer demo (mid-2026, behavioral health vertical, 5-day build compressed to 4 hours).
 
 ## When to use this skill
 
 Use when the request involves any of:
 - A customer demo where the customer dislikes standard Salesforce UX
 - "Headless360" / "Headless commerce" / custom-branded UI on Salesforce
-- TherapyNotes, ServiceNow, Workday, Toast, or other vertical-SaaS look-and-feel
+- A vertical-SaaS look-and-feel: TherapyNotes, ServiceNow, Workday, Toast, nCino, Tyler, Epic, Salesforce Field Service, Bloomberg, etc.
 - The new React Multi-Framework Beta / UI Bundle / `AiAuthoringBundle` deployment
 - An Agentforce copilot embedded in a non-LWC web surface
-- A "5 tools → 1 platform" consolidation narrative
+- A "N tools → 1 platform" consolidation narrative
 
 Do not use this skill for:
 - Standard Lightning Experience app builds (use `generating-lightning-app`)
@@ -40,15 +44,24 @@ Follow this order. Skipping ahead causes rework.
 
 ### Phase 1: Scope with the AE (15 min)
 
-Ask the AE these questions before writing code. Use the AskQuestion tool if available, otherwise ask conversationally:
+Ask the AE these questions before writing code. Use the AskQuestion tool if available, otherwise ask conversationally.
 
-- **Primary hero surface** — provider/agent/dispatcher/associate/etc.?
+**Step 1A — Identify the vertical and starting playbook:**
+
+- **Customer name + industry?** (e.g., "Regional Trust Bank, financial services")
+- **Which tool's UX are they trying to keep?** (e.g., nCino, TherapyNotes, ServiceNow, Toast, Tyler, Workday)
+
+→ Open [industry-playbooks.md](industry-playbooks.md) and find the matching vertical section. Use it as your starting scaffold (hero surface, personas, custom fields, AI insight cards, flow ideas, terminology). If the customer's vertical isn't listed, pick the closest one and adapt.
+
+**Step 1B — Confirm scope:**
+
+- **Primary hero surface** — which persona's day is the demo built around? (default to the playbook recommendation)
 - **Agentforce role** — proactive insights only, chat only, or both?
 - **Agent backing** — build a real agent, or stub the chat?
 - **Data strategy** — mostly static, mix, or live GraphQL? (Mostly static is fine and saves hours.)
 - **Flow demo** — live trigger, or screenshot of Flow Builder?
 - **Deployment target** — fresh scratch org, customer SDO, existing dev org?
-- **Demo tone** — "simple/clinical/human" vs "data-dense/power-user" vs "playful"
+- **Demo tone** — pick one: "trustworthy/data-dense" (FSI, healthcare clinical) / "fast/efficient" (retail, field service) / "warm/human" (behavioral health, customer success) / "official/calm" (public sector)
 
 Write the answers down. Re-reference during build to avoid scope creep.
 
@@ -97,31 +110,38 @@ Customer-demo specifics on top of that:
 
 - **Brand the global CSS** — define 4–6 brand color CSS variables in `src/styles/global.css` (`--<brand>-primary`, `--<brand>-bg`, etc.) and use them everywhere. Import the customer's actual font family from Google Fonts. Add a few subtle keyframe animations (`fadeUp`, `sparkleIn`, `pulse`) — they make the AI cards feel alive.
 - **Custom favicon + title** — inline SVG favicon in `index.html` with the customer's monogram. Title = customer's tool name, never "Salesforce."
-- **One hero detail page does 80% of the work** — Patient 360 / Customer 360 / Order 360. Tabs for Sessions/Notes/Insights/Billing. Spend most of your time here.
-- **AI Insights tab pattern** — 2×2 grid of cards with: AI-drafted note, churn risk, clinical/account signal, engagement signal. Each card has a small "Agentforce" pill + sparkle icon. Hover state expands inline (don't use floating popovers — they fight the animation transforms).
-- **Link to real CRM records** — every patient/customer in your static `demoData.ts` should have a `salesforceContactId` field. Display a clickable Salesforce Contact ID badge in the header that links to `<INSTANCE_URL>/lightning/r/Contact/<id>/view`. This is the single highest-leverage trick — proves the demo is real.
+- **One hero detail page does 80% of the work** — see [industry-playbooks.md](industry-playbooks.md) for vertical-specific names: Patient 360 (healthcare), Member 360 (FSI), Constituent 360 (public sector), Order 360 (retail), Asset 360 (field service), Engagement 360 (prof services). Tabs are vertical-specific too — sessions/notes/billing for healthcare, accounts/transactions/risk for FSI, etc. Spend most of your time here.
+- **AI Insights tab pattern** — 2×2 grid of cards. The four standard categories generalize across verticals: (1) AI-drafted artifact (note / email / summary / disclosure), (2) churn or attrition risk, (3) domain-specific signal (clinical / financial / behavioral / operational), (4) engagement signal. Each card has a small "Agentforce" pill + sparkle icon. Hover state expands inline (don't use floating popovers — they fight the animation transforms). See the playbook for vertical-specific card content.
+- **Link to real CRM records** — every record in your static `demoData.ts` should have a `salesforceContactId` (or `salesforceAccountId`, `salesforceCaseId`) field. Display a clickable Salesforce ID badge in the header that links to `<INSTANCE_URL>/lightning/r/<SObject>/<id>/view`. This is the single highest-leverage trick — proves the demo is real.
 
 ### Phase 5: Seed CRM data (30 min)
 
 The point: when the AE clicks the Salesforce link in the demo, a real record opens.
 
-1. **Create custom fields on Contact** matching what's in your React UI:
+1. **Pick the right SObject** for the demo's primary entity:
+   - Healthcare: Contact (patients)
+   - FSI: Contact + Account (members, households)
+   - Public sector: Contact + Case (constituents, cases)
+   - Retail: Contact + Account (customers, B2B accounts)
+   - Field service: Account + Asset + WorkOrder (sites, equipment, jobs)
+   - Professional services: Contact + Opportunity (clients, engagements)
+
+2. **Create custom fields** matching what's in your React UI. See [industry-playbooks.md](industry-playbooks.md) for vertical-specific field lists:
    ```
-   force-app/main/default/objects/Contact/fields/
+   force-app/main/default/objects/<SObject>/fields/
      <Field1>__c.field-meta.xml
      <Field2>__c.field-meta.xml
      ...
    ```
-   Typical fields: `Patient_Status__c`, `Risk_Level__c`, `Primary_Diagnosis__c`, `Outstanding_Balance__c`, `Next_Appointment__c`, `Latest_<Assessment>_Score__c`.
 
-2. **Create a permission set** granting FLS to all custom fields. Without this, the deployed user can't see the fields even as admin.
+3. **Create a permission set** granting FLS to all custom fields. Without this, the deployed user can't see the fields even as admin.
 
-3. **Create demo records via JSON tree import**:
+4. **Create demo records via JSON tree import**:
    ```bash
-   sf data import tree --files data/contacts.json --target-org <alias>
+   sf data import tree --files data/records.json --target-org <alias>
    ```
 
-4. **Grab the Contact IDs** post-import and paste them into `src/data/demoData.ts` as `salesforceContactId` on each patient.
+5. **Grab the record IDs** post-import and paste them into `src/data/demoData.ts` as `salesforceContactId` / `salesforceAccountId` / etc. on each record.
 
 ### Phase 6: Build the Agentforce copilot (45 min)
 
@@ -218,6 +238,7 @@ For a "real" build with proper review: multiply by 3.
 
 ## Supporting files
 
+- [industry-playbooks.md](industry-playbooks.md) — Vertical-specific recipes (FSI, retail, public sector, healthcare, field service, prof services) — START HERE for any new build
 - [agent-script-template.md](agent-script-template.md) — Full Agent Script template with hub-and-spoke pattern
 - [mcp-claude-setup.md](mcp-claude-setup.md) — Step-by-step Claude.ai ↔ Salesforce MCP setup
 - [demo-data-pattern.md](demo-data-pattern.md) — `demoData.ts` structure + Contact field examples
