@@ -261,10 +261,10 @@ Hand off if the teammate hits any of these:
 - Org doesn't have Agentforce licenses and can't get them in time
 - Deploy error not in the gotchas table (unrecognized metadata, license errors)
 - Demo is in <2 hours and something fundamental is broken
-- They want to do something outside the skill's scope (Person Accounts, Health Cloud objects, Experience Cloud site)
+- They want to do something outside the skill's scope (Person Accounts, Sales Cloud objects, Experience Cloud site)
 - Cursor is in a loop and can't get itself unstuck
 
-For escalations: drop in `#headless-demos` or @ Lauren Rawitscher in the original thread.
+For escalations: slack `@lindsayrawitscher`.
 
 ---
 
@@ -275,4 +275,3 @@ For escalations: drop in `#headless-demos` or @ Lauren Rawitscher in the origina
 - **Don't claim the demo will "just work."** Be honest: ~4 hours, manual org toggles required, live agent/MCP can be flaky.
 - **Don't skip the 2-question check.** Without Cursor + an org, the rest is a waste.
 - **Don't ask scoping questions in Slack.** Customer name, brand color, etc. — Cursor will ask those. Slack is just for getting them TO Cursor.
-- **Don't try to debug Cursor's output for them.** If Cursor is stuck, tell them to share the error and you'll point to the gotchas table or escalate.
