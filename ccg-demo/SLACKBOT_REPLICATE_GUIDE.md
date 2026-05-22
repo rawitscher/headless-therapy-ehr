@@ -97,14 +97,13 @@ Open a terminal and run:
 
   mkdir -p ~/.cursor/skills
   cd /tmp
-  git clone <lauren's-headless-demos-repo-url> headless-demos
-  cp -r headless-demos/.cursor/skills/building-headless-salesforce-demo \
+  git clone https://github.com/rawitscher/headless-therapy-ehr.git
+  cp -r headless-therapy-ehr/.cursor/skills/building-headless-salesforce-demo \
         ~/.cursor/skills/
 
 Then restart Cursor.
 
-Reply when done. (When this skill is published to a shared SE repo,
-I'll update these steps.)
+Reply when done.
 ```
 
 ### Step 4: Generate the Cursor handoff prompt
