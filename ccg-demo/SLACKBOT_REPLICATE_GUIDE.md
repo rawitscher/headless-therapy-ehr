@@ -169,23 +169,26 @@ After they paste, send this short standby message:
 ```
 👍 Cursor's driving now. Heads up — it WILL pause and ask you to do
 these things manually in your scratch org's Salesforce UI (it can't
-click around in Setup for you):
+click around in Setup for you). Do them in this order:
 
-  □ Setup → Digital Experience → Enable (then create a placeholder
-    site — back out without picking a template; this seeds required
-    dependencies)
-  □ Setup → Permission Sets → New → add "Customize Application"
-    system permission → assign to yourself
-  □ Setup → Quick Find "React" → enable "React Development with
-    Agentforce Vibes and Salesforce Multi-Framework (Beta)"
-  □ Setup → Einstein → Turn on Einstein
-  □ Setup → Agentforce → Turn on Agentforce
-  □ Setup → My Domain → uncheck "Require first party use of Salesforce
-    cookies" (critical — chat widget breaks without it)
+  1. Setup → quick search "multi" → enable "React Development with
+     Agentforce Vibes and Salesforce Multi-Framework (Beta)"
+  2. Setup → quick search "Einstein Setup" → Turn on Einstein
+  3. Setup → quick search "Agentforce" → Turn on Agentforce
+  4. Setup → quick search "Digital Experiences" → Settings → check
+     "Enable Digital Experiences" → save (pick any domain suffix)
+  5. Setup → My Domain → Routing and Policies → uncheck "Require
+     first party use of Salesforce cookies" → save (critical — chat
+     widget breaks without it)
 
-Also, expect two browser logins from `sf org login web` — first your
-Dev Hub (so Cursor can create the scratch org), then the scratch org
-itself (so Cursor can deploy to it).
+Heads up on logins:
+  • Cursor will ask you to log into your Dev Hub once (browser opens)
+  • After the scratch org is created, Cursor will use `sf org open`
+    to enter it automatically — no second login needed
+
+If you restart Cursor partway through (e.g., after installing the
+skill), Cursor doesn't auto-resume. Just send a quick "ready" or
+"continue" in the chat and it'll pick back up.
 
 I'm here if you hit a wall. Good luck! 🚀
 ```

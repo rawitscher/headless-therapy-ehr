@@ -38,6 +38,14 @@ Every headless customer demo built with this skill has these layers:
 6. **One automation win** — Flow Builder screenshot, optionally a working flow.
 7. **Closing consolidation page** — "5 tools → 1 platform" visual.
 
+## After Cursor restart (resume protocol)
+
+If you (the agent) were just installed as a skill and the user has restarted Cursor, they need to **explicitly send a message to wake you up** — Cursor doesn't auto-resume mid-flow after a restart. When you first encounter a restarted session, post this to the user:
+
+> Welcome back! I see you've restarted Cursor and the skill is now loaded. Reply with anything (e.g., "ready" or "continue") and I'll pick up right where we left off — starting with the Phase 1 scoping questions.
+
+Once they reply, proceed normally. Do not assume any prior state — re-ask Phase 1 scoping questions cleanly.
+
 ## The 7-phase build sequence
 
 Follow this order. Skipping ahead causes rework.
@@ -69,14 +77,9 @@ Write the answers down. Re-reference during build to avoid scope creep.
 
 The UI Bundle Multi-Framework Beta requires **manual toggles in Setup** that cannot be enabled via `project-scratch-def.json`. This is the #1 source of mid-build pain.
 
-Required toggles (have the user do these in Setup):
+**Step 2A — Create the scratch org and open it:**
 
-1. **Setup → Vibes Settings → React Development with Agentforce Vibes and Salesforce Multi-Framework (Beta)** → Enable
-2. **Setup → Einstein Setup → Turn on Einstein** → Enable
-3. **Setup → Agentforce → Turn on Agentforce** → Enable
-4. **Setup → My Domain → Routing and Policies → Cookies → uncheck "Require first party use of Salesforce cookies"** ⚠️ critical for the chat widget to authenticate
-
-For scratch orgs, include this in `config/project-scratch-def.json`:
+Use this `config/project-scratch-def.json`:
 
 ```json
 {
@@ -89,6 +92,29 @@ For scratch orgs, include this in `config/project-scratch-def.json`:
 
 ⚠️ Do NOT try to add `DataCloud`, `CustomerDataPlatform`, `AgentforceVibeForMultiFramework`, or `Agentforce` as features — these names are wrong or unavailable on most Dev Hubs. Just use `Einstein1AIPlatform`.
 
+Then:
+
+```bash
+sf org create scratch -f config/project-scratch-def.json -a <alias> -d
+sf org open -o <alias>
+```
+
+⚠️ **Always use `sf org open` to enter the scratch org — DO NOT direct the user to click a login link or paste credentials into a login screen.** Click-to-login often fails because scratch orgs default to passwordless auth. `sf org open` uses the CLI's stored token and opens the org with the user already signed in. If the user genuinely needs a password (rare — e.g., to log in from another browser), generate one with `sf org generate password -o <alias>` and copy it to their clipboard.
+
+**Step 2B — Manual Setup toggles (in this exact order):**
+
+Have the user do these in the freshly-opened scratch org. Use the quick search box for speed.
+
+| # | Setup search | What to do | Why |
+|---|---|---|---|
+| 1 | `multi` | Toggle **"React Development with Agentforce Vibes and Salesforce Multi-Framework (Beta)"** → On | Without this, deploying the UI Bundle fails with *"UIBundle Metadata API is not enabled"* |
+| 2 | `Einstein Setup` | Click **Turn on Einstein** | Required before Agentforce can be enabled |
+| 3 | `Agentforce` | Click **Turn on Agentforce** | Required to create/publish the agent in Phase 6 |
+| 4 | `Digital Experiences → Settings` | Check **Enable Digital Experiences** → Save (pick any domain suffix, e.g. `<alias>-demo`) | The UI Bundle hosts inside an Experience Site |
+| 5 | `My Domain → Routing and Policies` | Under **Cookies**, UNCHECK *"Require first-party use of Salesforce cookies"* → Save | ⚠️ Critical — without this the Agentforce chat widget shows *"Authentication Error"* during the demo |
+
+Pause after each toggle and ask the user to confirm "done" before moving to the next one — they're click-fatigue prone and Setup's UI is slow.
+
 ### Phase 3: Scaffold the UI bundle (10 min)
 
 ```bash
@@ -97,10 +123,20 @@ cd <customer>-demo
 sf template generate ui-bundle --name <AppName>
 cd force-app/main/default/uiBundles/<AppName>
 npm install
-npm run dev
 ```
 
-The dev server runs at `http://localhost:5173`. Do all visual iteration here — it's 100× faster than redeploying to the org.
+⚠️ **Do NOT run `npm run dev` and do NOT use the local Vite dev server (`http://localhost:5173`) to test the Agentforce chat widget.** The widget requires a Lightning Out auth context that only exists when the bundle is hosted inside the Salesforce org. Trying to make it work locally requires Trusted URLs, CORS allowlists, and frontdoor URL hacks that are not worth the time.
+
+**Always test by deploying to the org and clicking through there.** For pure visual iteration (layout, colors, copy — anything that doesn't involve the chat widget), `npm run dev` is fine, but plan to deploy+test in the org every 2–3 changes.
+
+Deploy with:
+
+```bash
+npm run build
+sf project deploy start --source-dir force-app/main/default/uiBundles/<AppName> -o <alias>
+```
+
+A full UI bundle redeploy takes ~20–30 seconds. Budget this into the loop.
 
 ### Phase 4: Build the hero surfaces (1.5 hr — the bulk of the work)
 
@@ -210,7 +246,7 @@ End every build by writing a `DEMO_TALKTRACK.md` with this structure:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| "UIBundle Metadata API is not enabled" on deploy | React Multi-Framework Beta toggle off | Setup → Vibes Settings → enable |
+| "UIBundle Metadata API is not enabled" on deploy | React Multi-Framework Beta toggle off | Setup → search "multi" → enable React Multi-Framework (Beta) |
 | Agent chat shows "Authentication Error" | Cookie restriction on | Setup → My Domain → uncheck first-party cookies |
 | Agent chat: "Something went wrong" mid-conversation | Subagents not activated or instructions ask for clarification | Activate each subagent; bake defaults into system prompt |
 | `sf agent preview` "Invalid user ID" but widget works | Expected for Employee Agent via CLI | Ignore — preview needs different auth context |

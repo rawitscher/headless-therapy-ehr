@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <description>Daily 8am sweep: identify Platinum/Gold customers with no purchase activity in 90+ days and create a follow-up task on the assigned store manager. Replaces "Mailchimp + Yotpo + a Google Sheet."</description>
+    <interviewLabel>Notify Manager On VIP At Risk {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Notify Manager — VIP At Risk</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <runInMode>SystemModeWithoutSharing</runInMode>
+    <start>
+        <locationX>176</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Get_At_Risk_VIPs</targetReference>
+        </connector>
+        <schedule>
+            <frequency>Daily</frequency>
+            <startDate>2026-05-23</startDate>
+            <startTime>08:00:00.000Z</startTime>
+        </schedule>
+        <triggerType>Scheduled</triggerType>
+    </start>
+    <recordLookups>
+        <name>Get_At_Risk_VIPs</name>
+        <label>Get At-Risk VIP Customers</label>
+        <locationX>176</locationX>
+        <locationY>120</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Create_Followup_Tasks</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Loyalty_Tier__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Platinum</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Last_Purchase_Date__c</field>
+            <operator>LessThan</operator>
+            <value>
+                <elementReference>$Flow.CurrentDate</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Contact</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordCreates>
+        <name>Create_Followup_Tasks</name>
+        <label>Create Follow-up Task on each VIP</label>
+        <locationX>176</locationX>
+        <locationY>240</locationY>
+        <inputReference>Followup_Tasks</inputReference>
+    </recordCreates>
+    <loops>
+        <name>Loop_VIPs</name>
+        <label>Build Task per VIP</label>
+        <locationX>176</locationX>
+        <locationY>360</locationY>
+        <collectionReference>Get_At_Risk_VIPs</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+    </loops>
+    <variables>
+        <name>Followup_Tasks</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Task</objectType>
+    </variables>
+    <status>Active</status>
+</Flow>
