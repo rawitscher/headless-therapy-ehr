@@ -142,10 +142,9 @@ Please handle the full setup automatically:
 
 8. Once the scratch org is created, **stop and tell me exactly which
    manual toggles to flip in Salesforce Setup** — pull the exact list
-   from that same PDF (Digital Experience, Customize Application
-   permission set, React Multi-Framework Beta, Einstein, Agentforce,
-   My Domain cookie setting). Don't try to flip these yourself —
-   they're UI-only.
+   from the skill's SKILL.md Phase 2B table (Multi-Framework Beta,
+   Einstein, Agentforce, Digital Experiences, My Domain cookie
+   setting). Don't try to flip these yourself — they're UI-only.
 
 9. After I confirm the toggles, drive the rest of the build, asking
    for input only when needed. Default to demo-safe choices: static
