@@ -179,6 +179,18 @@ The point: when the AE clicks the Salesforce link in the demo, a real record ope
 
 5. **Grab the record IDs** post-import and paste them into `src/data/demoData.ts` as `salesforceContactId` / `salesforceAccountId` / etc. on each record.
 
+### Phase 5.5: Polish the Salesforce-side record page (15 min)
+
+The AE will click the CRM link badge in your React app during the demo. If the Contact opens with a default Salesforce layout, that breaks the "no Salesforce chrome" narrative.
+
+**Deploy a custom Lightning Record Page (FlexiPage)** that shows the same fields you surfaced in React, organized cleanly. See [contact-record-page.md](contact-record-page.md) for the full template + per-vertical field lists.
+
+Short version:
+1. Drop the template FlexiPage XML into `force-app/main/default/flexipages/`
+2. Swap in your vertical's custom fields
+3. Deploy
+4. ⚠️ Tell the user to **manually activate** the page (Setup → Object Manager → Contact → Lightning Record Pages → Activation → Org Default). FlexiPage activation isn't reliably deployable via metadata.
+
 ### Phase 6: Build the Agentforce copilot (45 min)
 
 Use Agent Script (`.agent` file) deployed via CLI, not the UI builder — it's faster, reproducible, and gives you version control. See [agent-script-template.md](agent-script-template.md) for the full template.
@@ -276,8 +288,15 @@ For a "real" build with proper review: multiply by 3.
 
 - [industry-playbooks.md](industry-playbooks.md) — Vertical-specific recipes (FSI, retail, public sector, healthcare, field service, prof services) — START HERE for any new build
 - [agent-script-template.md](agent-script-template.md) — Full Agent Script template with hub-and-spoke pattern
+- [contact-record-page.md](contact-record-page.md) — Reusable FlexiPage template for the Salesforce-side Contact record (Phase 5.5)
 - [mcp-claude-setup.md](mcp-claude-setup.md) — Step-by-step Claude.ai ↔ Salesforce MCP setup
 - [demo-data-pattern.md](demo-data-pattern.md) — `demoData.ts` structure + Contact field examples
+
+## Model recommendation
+
+- **First time running this skill:** use **Claude Sonnet or Opus** explicitly (not Auto mode). The skill is validated against Sonnet; smaller models occasionally skip steps or hallucinate Agent Script syntax. Cursor → model picker → pick Sonnet.
+- **Subsequent runs by experienced teammates:** **Auto mode** is fine.
+- **Quota awareness:** a full 4-hour build consumes meaningful usage — roughly 10–30% of a monthly Cursor Pro quota depending on debugging loops. Tell the user to check Settings → Plans before starting a build, especially if they're mid-month.
 
 ## Don'ts
 
