@@ -97,8 +97,8 @@ will create the actual scratch org for you later.
 This is the **whole magic** — one message that gets pasted into Cursor and bootstraps everything. Send this to the teammate:
 
 ```
-Perfect. In Cursor, open a New Chat (Cmd+N or click the + in the chat
-panel) and paste this entire prompt:
+Perfect. In Cursor, open a New Agent (Cmd+N or click the + in the
+Agent chat panel) and paste this entire prompt:
 
 ---PASTE BELOW THIS LINE---
 
