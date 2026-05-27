@@ -66,7 +66,7 @@ Ask the AE these questions before writing code. Use the AskQuestion tool if avai
 - **Primary hero surface** — which persona's day is the demo built around? (default to the playbook recommendation)
 - **Agentforce role** — proactive insights only, chat only, or both?
 - **Agent backing** — build a real agent, or stub the chat?
-- **Data strategy** — mostly static, mix, or live GraphQL? (Mostly static is fine and saves hours.)
+- **Data strategy** — mostly static, mix, or live GraphQL? (Mostly static is fine and saves hours. If GraphQL is requested, read [graphql-reference.md](graphql-reference.md) BEFORE writing any query — Salesforce's GraphQL shape is unusual.)
 - **Flow demo** — live trigger, or screenshot of Flow Builder?
 - **Deployment target** — fresh scratch org, customer SDO, existing dev org?
 - **Demo tone** — pick one: "trustworthy/data-dense" (FSI, healthcare clinical) / "fast/efficient" (retail, field service) / "warm/human" (behavioral health, customer success) / "official/calm" (public sector)
@@ -117,6 +117,14 @@ Pause after each toggle and ask the user to confirm "done" before moving to the 
 
 ### Phase 3: Scaffold the UI bundle (10 min)
 
+**Step 3A — Pick a clean project directory.** Don't dump in `~/`. Ask the user:
+
+> Where should I create the project? I recommend `~/Documents/se-demos/` to keep things organized. Reply with that, your own path, or just "default" and I'll use `~/Documents/se-demos/`.
+
+If the directory doesn't exist, create it (`mkdir -p ~/Documents/se-demos`), then `cd` into it before running `sf project generate`. Never assume the user is in the right directory — always confirm path with `pwd`.
+
+**Step 3B — Scaffold:**
+
 ```bash
 sf project generate --name <customer>-demo --template empty
 cd <customer>-demo
@@ -125,11 +133,27 @@ cd force-app/main/default/uiBundles/<AppName>
 npm install
 ```
 
+**Step 3C — Verify `ui-bundle.json` `outputDir`** ⚠️
+
+After scaffolding, **open `ui-bundle.json` and confirm `"outputDir": "dist"`** (some scaffolds default to `"src"`, which causes the deployed bundle to render a blank page in the org). If it says anything other than `"dist"`, fix it before deploying:
+
+```json
+{
+  "outputDir": "dist",
+  "routing": {
+    "trailingSlash": "never",
+    "fallback": "index.html"
+  }
+}
+```
+
+This is a real bug that caused a confusing "blank app on deploy, but works locally" failure for one teammate. Always check.
+
 ⚠️ **Do NOT run `npm run dev` and do NOT use the local Vite dev server (`http://localhost:5173`) to test the Agentforce chat widget.** The widget requires a Lightning Out auth context that only exists when the bundle is hosted inside the Salesforce org. Trying to make it work locally requires Trusted URLs, CORS allowlists, and frontdoor URL hacks that are not worth the time.
 
 **Always test by deploying to the org and clicking through there.** For pure visual iteration (layout, colors, copy — anything that doesn't involve the chat widget), `npm run dev` is fine, but plan to deploy+test in the org every 2–3 changes.
 
-Deploy with:
+**Step 3D — Build + deploy:**
 
 ```bash
 npm run build
@@ -138,9 +162,27 @@ sf project deploy start --source-dir force-app/main/default/uiBundles/<AppName> 
 
 A full UI bundle redeploy takes ~20–30 seconds. Budget this into the loop.
 
+**Step 3E — Tell the user how to open the deployed app.**
+
+⚠️ **Do NOT try to construct a direct URL to the deployed app and tell the user to click it — the URL pattern varies and your guess will be wrong.** Instead, after every successful deploy, tell the user:
+
+> Open your scratch org → click the **App Launcher** (9-dot grid icon, top left) → search for **<AppName>** → click to launch.
+
+If the app doesn't show up in App Launcher, the deploy probably failed silently — check `sf project deploy report` and the org's Setup → Deployment Status page.
+
 ### Phase 4: Build the hero surfaces (1.5 hr — the bulk of the work)
 
 Read `building-ui-bundle-frontend` for the project conventions (shadcn/ui, Tailwind, `appLayout.tsx`, `routes.tsx`).
+
+⚠️ **CRITICAL: vertical-correct naming.** The CCG reference build is healthcare, so terms like `Patient`, `patientId`, `clinicianName`, `Session`, `PHQ9_Score` are ALL OVER the reference code. **Do NOT carry those names into a non-healthcare build.** A teammate reported this exact bug: they built a "high-tech" customer demo and Cursor named React variables, types, and props with `patient` / `clinician` / `session` everywhere.
+
+Before writing ANY component, types, or data file:
+1. Re-read the customer's vertical in [industry-playbooks.md](industry-playbooks.md)
+2. Pick the right entity name (Member / Client / Constituent / Customer / Asset / Account / etc.)
+3. Use that name **everywhere** — TypeScript types, component props, file names, route paths, data field names, mock data variables
+4. The ONLY healthcare-shaped thing should be the CCG reference repo itself. If you find yourself writing `patient` in a non-healthcare build, STOP and rename.
+
+Sanity-check by grepping for `patient`, `clinician`, `session`, `PHQ`, `therapy` across the new project before deploying. Zero hits expected for non-healthcare verticals.
 
 Customer-demo specifics on top of that:
 
@@ -266,6 +308,10 @@ End every build by writing a `DEMO_TALKTRACK.md` with this structure:
 | Claude MCP "Couldn't reach the MCP server" | Wrong URL format for scratch org | Use `/sandbox/platform/sobject-reads` path for scratch/sandbox |
 | Claude MCP `OAUTH_APPROVAL_ERROR_GENERIC` after consent | ECA missing `mcp_api` scope | Add `Access Salesforce hosted MCP servers (mcp_api)` to selected scopes |
 | Scratch org features rejected | Wrong feature names | Only `Einstein1AIPlatform` is reliably available |
+| Deployed UI Bundle renders a blank page in the org | `ui-bundle.json` has `"outputDir": "src"` instead of `"dist"` | Open `ui-bundle.json`, set `"outputDir": "dist"`, redeploy |
+| Direct URL to deployed app 404s | URL pattern varies — guessing is unreliable | Tell user to open App Launcher → search by app name → click |
+| React types/props using wrong vertical terminology (e.g., `patient` in an FSI build) | Cursor leaked names from CCG reference | Grep for `patient`/`clinician`/`session`; rename per the industry playbook |
+| GraphQL query returns `null` or "Cannot query field" errors | Wrong query shape (forgot `uiapi.query` wrapper or `{ value }` on fields) | See [graphql-reference.md](graphql-reference.md) for the correct Salesforce GraphQL shape |
 
 ## Time budget (realistic)
 
@@ -289,6 +335,7 @@ For a "real" build with proper review: multiply by 3.
 - [industry-playbooks.md](industry-playbooks.md) — Vertical-specific recipes (FSI, retail, public sector, healthcare, field service, prof services) — START HERE for any new build
 - [agent-script-template.md](agent-script-template.md) — Full Agent Script template with hub-and-spoke pattern
 - [contact-record-page.md](contact-record-page.md) — Reusable FlexiPage template for the Salesforce-side Contact record (Phase 5.5)
+- [graphql-reference.md](graphql-reference.md) — Salesforce GraphQL API shapes, codegen flow, hybrid live/static pattern (read before writing ANY GraphQL query)
 - [mcp-claude-setup.md](mcp-claude-setup.md) — Step-by-step Claude.ai ↔ Salesforce MCP setup
 - [demo-data-pattern.md](demo-data-pattern.md) — `demoData.ts` structure + Contact field examples
 
