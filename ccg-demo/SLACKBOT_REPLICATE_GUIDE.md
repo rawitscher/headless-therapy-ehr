@@ -107,9 +107,18 @@ the pattern at https://github.com/rawitscher/headless-therapy-ehr.
 
 Please handle the full setup automatically:
 
-1. **Check Node.js is installed** (`node --version` — must be 20+).
-   If missing, STOP and tell me to install Node 20 LTS from
-   https://nodejs.org before continuing. Don't try to install it yourself.
+1. **Check Node.js AND npm are both installed and on an active LTS line.**
+   Run BOTH of these and confirm each prints a version (not an error):
+   - `node --version` — must be on an active LTS line: **v20.x or v22.x**.
+     Odd majors (v21, v23) are NOT LTS — reject them.
+   - `npm --version` — must print a version. Some Node installs
+     (Homebrew node-only, partial nvm, corepack-only setups) ship
+     `node` without a working `npm`, and the React UI bundle build
+     will silently produce wonky output before failing later.
+   If either check fails, STOP and tell me to install the current
+   Node LTS from https://nodejs.org (or via `nvm install --lts`)
+   before continuing. Don't try to install Node yourself, and don't
+   try to work around a missing npm with corepack or npx.
 
 2. **Install the Salesforce CLI** if not already installed:
    `npm install -g @salesforce/cli`
