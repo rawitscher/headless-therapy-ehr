@@ -46,6 +46,27 @@ If you (the agent) were just installed as a skill and the user has restarted Cur
 
 Once they reply, proceed normally. Do not assume any prior state — re-ask Phase 1 scoping questions cleanly.
 
+## Nudge the user whenever you're blocked on them (IMPORTANT)
+
+This skill is often run by busy sales leaders who walk away from their laptop mid-build. Several steps require the human to do something (flip a Setup toggle, restart Cursor, activate a page, answer a scoping question). If the agent silently waits, the build stalls for minutes or hours.
+
+**Whenever you stop and wait for the user — a question, a confirmation, a manual Setup action, or a restart — fire a desktop notification + sound so they look back at Cursor.** Run this immediately before (or as part of) the message where you hand control back to the user:
+
+```bash
+osascript -e 'display notification "<short what-I-need>" with title "Headless Demo Build" subtitle "Cursor needs you" sound name "Glass"'
+```
+
+Replace `<short what-I-need>` with a specific ask, e.g. `"Flip the Agentforce toggle in Setup, then say done"` or `"Restart Cursor so the skill loads"`. Keep it under ~8 words.
+
+Rules:
+- Fire it **every time** you yield to the user for a manual action or a required answer — not for trivial FYIs.
+- It's macOS-only (`osascript`). On Linux, use `notify-send "Cursor needs you" "<short what-I-need>"` and `printf '\a'` for a bell. On Windows, just print a loud banner (below). If the notification command errors, ignore it and continue — never block the build on a failed nudge.
+- Always **also** print a visible banner in chat so the ask is obvious even if they missed the notification:
+
+> 🔔 **WAITING ON YOU** — <one-line description of exactly what to do>. Reply here when done.
+
+Do not over-nudge: one notification per distinct wait point.
+
 ## The 7-phase build sequence
 
 Follow this order. Skipping ahead causes rework.
@@ -143,7 +164,7 @@ Have the user do these in the freshly-opened scratch org. Use the quick search b
 | 3 | `Agentforce` | Click **Turn on Agentforce**. ⚠️ If the toggle doesn't appear right away, refresh the page — Setup sometimes caches the pre-Einstein state. | Required to create/publish the agent in Phase 6 |
 | 4 | `Digital Experiences → Settings` | Check **Enable Digital Experiences** → Save. Then go to **Digital Experiences → All Sites**, click **New Site**, then immediately click **Back to Setup** (you don't need to actually create a site). This forces the org to provision the React-hosting prerequisites. | The UI Bundle hosts inside an Experience Site, and the "New Site" click is what triggers the underlying React infra setup |
 
-Pause after each toggle and ask the user to confirm "done" before moving to the next one — they're click-fatigue prone and Setup's UI is slow.
+Pause after each toggle and ask the user to confirm "done" before moving to the next one — they're click-fatigue prone and Setup's UI is slow. **Fire a desktop notification (see "Nudge the user" above) each time you hand a toggle back to them** — this is the longest manual-wait phase and the most common place a distracted user strands the build.
 
 ### Phase 3: Scaffold the UI bundle (10 min)
 

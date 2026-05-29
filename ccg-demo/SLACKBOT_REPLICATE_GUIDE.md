@@ -155,7 +155,12 @@ Please handle the full setup automatically:
     ~/.cursor/skills/`
 
 5. **Tell me to restart Cursor** so the skill loads, then continue
-   from where you left off when I come back.
+   from where you left off when I come back. When you hand control
+   back to me for ANY manual step (restarting Cursor, flipping Setup
+   toggles, answering a question), first fire a desktop notification
+   so I look back at Cursor even if I've walked away:
+   `osascript -e 'display notification "<what you need>" with title "Headless Demo Build" subtitle "Cursor needs you" sound name "Glass"'`
+   (macOS only; if it errors, just continue — don't block on it.)
 
 6. After restart, **use the `building-headless-salesforce-demo` skill**
    and walk me through the Phase 1 scoping questions. **Start with
