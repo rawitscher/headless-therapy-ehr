@@ -158,9 +158,21 @@ Please handle the full setup automatically:
    from where you left off when I come back.
 
 6. After restart, **use the `building-headless-salesforce-demo` skill**
-   and walk me through the Phase 1 scoping questions (customer, industry,
-   target tool UX, persona, demo date, brand color). Use the matching
-   vertical playbook from the skill's `industry-playbooks.md`.
+   and walk me through the Phase 1 scoping questions. **Start with
+   Step 1A: ask me for the customer name AND website URL FIRST,
+   before anything else.**
+   - If I give you a real customer + URL: auto-fetch their homepage,
+     extract brand colors / fonts / product terminology / tone, and
+     present a short brand summary for me to confirm before moving on.
+   - If I say "I'll fill in later" or "use generic for now": acknowledge,
+     enter **deferred-branding mode** (neutral tokens, generic entity
+     names, generic project name), and EXPLICITLY tell me you'll pause
+     at Phase 4 (hero surfaces) and re-ask for the customer name + URL
+     before building any branded UI. Don't guess at branding.
+
+   Then continue with Step 1B (industry + target tool UX) and Step 1C
+   (persona, demo date, agent role, data strategy, etc.). Use the
+   matching vertical playbook from the skill's `industry-playbooks.md`.
 
 7. **Help me log into my Dev Hub** (`sf org login web --set-default-dev-hub`)
    and then **create a scratch org** following the steps in

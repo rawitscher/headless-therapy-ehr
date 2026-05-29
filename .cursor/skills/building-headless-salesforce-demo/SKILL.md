@@ -54,14 +54,45 @@ Follow this order. Skipping ahead causes rework.
 
 Ask the AE these questions before writing code. Use the AskQuestion tool if available, otherwise ask conversationally.
 
-**Step 1A — Identify the vertical and starting playbook:**
+**Step 1A — Identify the customer (hard gate, ask FIRST):**
 
-- **Customer name + industry?** (e.g., "Regional Trust Bank, financial services")
+Before any other scoping, ask:
+
+- **Customer name?** (e.g., "Regional Trust Bank")
+- **Customer website URL?** (e.g., `https://www.regionaltrust.com`)
+
+This is the single highest-information input — it determines brand colors, typography, product terminology, tone, and the entire visual feel of Phase 4. Don't move on without it.
+
+**If the user provides a real customer + URL:**
+
+1. **Auto-fetch the homepage** using your web fetch tool. Extract:
+   - Primary + secondary brand colors (from CSS, logo, hero imagery)
+   - Font family (look at the `font-family` declarations and Google Fonts links in the HTML)
+   - Product/feature terminology (what do they call their core noun — "Members"? "Clients"? "Cases"? "Orders"?)
+   - Tone (formal/clinical, warm/human, fast/efficient, etc.)
+2. **Present a 4–6 line "brand summary"** back to the user and ask them to confirm/adjust before proceeding. Example: *"Got it — Regional Trust Bank. From their site: navy `#0B2545` primary, gold `#C8A951` accent, Inter font, they call account holders 'Members', tone is formal/trustworthy. Sound right?"*
+3. Save these values — they feed directly into Phase 4 (brand CSS variables, font import, terminology).
+
+**If the user says "I'll fill in later" / "use generic for now" / similar:**
+
+Acknowledge, but **explicitly tell them you'll pause at Phase 4** rather than building hero surfaces blind:
+
+> Got it — I'll proceed with a generic scaffold using neutral brand tokens and vertical-appropriate placeholder terminology. **I will pause at Phase 4 (hero surfaces) and re-ask for the customer name + URL before building any branded UI** — that's the work that gets thrown away if we guess wrong. Phases 2 (org prep), 3 (scaffold), and 5 (CRM data) are brand-independent, so we'll get good forward motion.
+
+Enter **deferred-branding mode**:
+- Use placeholder CSS tokens (`--brand-primary: #2563EB` neutral blue, `--brand-accent: #64748B` slate, system font stack)
+- Use the vertical playbook's generic entity name (Member / Client / Customer / Constituent — NOT a customer-specific term)
+- Name the project + UI bundle generically (e.g., `headless-demo`, `DemoApp`) so renaming later is cheap
+- **At the start of Phase 4, STOP and re-ask Step 1A.** Do not begin building hero pages until the customer is named and the brand summary is confirmed.
+
+**Step 1B — Identify the vertical and starting playbook:**
+
+- **Industry?** (e.g., financial services, healthcare, public sector, retail, field service, professional services)
 - **Which tool's UX are they trying to keep?** (e.g., nCino, TherapyNotes, ServiceNow, Toast, Tyler, Workday)
 
 → Open [industry-playbooks.md](industry-playbooks.md) and find the matching vertical section. Use it as your starting scaffold (hero surface, personas, custom fields, AI insight cards, flow ideas, terminology). If the customer's vertical isn't listed, pick the closest one and adapt.
 
-**Step 1B — Confirm scope:**
+**Step 1C — Confirm scope:**
 
 - **Primary hero surface** — which persona's day is the demo built around? (default to the playbook recommendation)
 - **Agentforce role** — proactive insights only, chat only, or both?
@@ -171,6 +202,8 @@ A full UI bundle redeploy takes ~20–30 seconds. Budget this into the loop.
 If the app doesn't show up in App Launcher, the deploy probably failed silently — check `sf project deploy report` and the org's Setup → Deployment Status page.
 
 ### Phase 4: Build the hero surfaces (1.5 hr — the bulk of the work)
+
+⚠️ **If you're in deferred-branding mode from Phase 1, STOP HERE.** Re-ask the user for the customer name + website URL now, auto-fetch the site, present the brand summary, and only proceed once they confirm. Hero surface work without a real customer is the single biggest source of rework — colors, fonts, terminology, and tone all flow from this answer. Do not build any branded component before this is locked in.
 
 Read `building-ui-bundle-frontend` for the project conventions (shadcn/ui, Tailwind, `appLayout.tsx`, `routes.tsx`).
 
