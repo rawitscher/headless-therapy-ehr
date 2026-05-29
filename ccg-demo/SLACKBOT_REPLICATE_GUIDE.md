@@ -107,7 +107,8 @@ the pattern at https://github.com/rawitscher/headless-therapy-ehr.
 
 Please handle the full setup automatically:
 
-1. **Check Node.js AND npm are both installed and on an active LTS line.**
+1. **Check Node.js AND npm are both installed and on an active LTS line,
+   then auto-remediate via nvm if not.**
    Run BOTH of these and confirm each prints a version (not an error):
    - `node --version` — must be on an active LTS line: **v20.x or v22.x**.
      Odd majors (v21, v23) are NOT LTS — reject them.
@@ -115,10 +116,28 @@ Please handle the full setup automatically:
      (Homebrew node-only, partial nvm, corepack-only setups) ship
      `node` without a working `npm`, and the React UI bundle build
      will silently produce wonky output before failing later.
-   If either check fails, STOP and tell me to install the current
-   Node LTS from https://nodejs.org (or via `nvm install --lts`)
-   before continuing. Don't try to install Node yourself, and don't
-   try to work around a missing npm with corepack or npx.
+
+   **If either check fails, install Node 22 LTS via nvm yourself — don't
+   stop and ask. The user already opted in by running this prompt.**
+   - If `nvm` is not installed:
+     `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash`
+     then source it in the current shell:
+     `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"`
+   - Install + activate + default to Node 22 LTS:
+     `nvm install --lts=iron && nvm use --lts=iron && nvm alias default 'lts/*'`
+     (Use `--lts=iron` for Node 20 if `iron` is preferred over `jod`.)
+   - Re-verify with `node --version` and `npm --version` in the SAME shell.
+     If they still don't resolve, ask the user to open a fresh terminal
+     and confirm — sometimes nvm needs a new shell.
+
+   **Constraints:**
+   - Use **nvm only**. Do NOT install Node via Homebrew, the official
+     pkg installer, `n`, `fnm`, corepack, or npx — nvm is the least
+     invasive and never touches system Node.
+   - If a system Node already exists (e.g., `/opt/homebrew/bin/node`),
+     leave it alone, but TELL the user it's still on disk and may
+     shadow nvm in non-login shells; they can `brew uninstall node`
+     themselves later if they want a clean setup.
 
 2. **Install the Salesforce CLI** if not already installed:
    `npm install -g @salesforce/cli`

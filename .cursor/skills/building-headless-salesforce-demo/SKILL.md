@@ -300,7 +300,7 @@ End every build by writing a `DEMO_TALKTRACK.md` with this structure:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `npm: command not found` during Phase 3 scaffolding, or weird/empty output from `npm install` | Node installed without npm (Homebrew node-only, corepack-only, partial nvm), even on a "modern" version like v22.x | Reinstall Node via `nvm install --lts && nvm use --lts`; confirm BOTH `node --version` and `npm --version` print before retrying. See Phase 0. |
+| `npm: command not found` during Phase 3 scaffolding, or weird/empty output from `npm install` | Node installed without npm (Homebrew node-only, corepack-only, partial nvm), even on a "modern" version like v22.x | Reinstall Node via `nvm install --lts && nvm use --lts && nvm alias default 'lts/*'`; confirm BOTH `node --version` and `npm --version` print before retrying. Do not work around with corepack/npx. |
 | "UIBundle Metadata API is not enabled" on deploy | React Multi-Framework Beta toggle off | Setup → search "multi" → enable React Multi-Framework (Beta) |
 | Agent chat shows "Authentication Error" | Cookie restriction on | Setup → My Domain → uncheck first-party cookies |
 | Agent chat: "Something went wrong" mid-conversation | Subagents not activated or instructions ask for clarification | Activate each subagent; bake defaults into system prompt |
