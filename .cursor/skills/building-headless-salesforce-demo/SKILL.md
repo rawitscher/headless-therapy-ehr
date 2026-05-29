@@ -140,9 +140,8 @@ Have the user do these in the freshly-opened scratch org. Use the quick search b
 |---|---|---|---|
 | 1 | `multi` | Toggle **"React Development with Agentforce Vibes and Salesforce Multi-Framework (Beta)"** → On | Without this, deploying the UI Bundle fails with *"UIBundle Metadata API is not enabled"* |
 | 2 | `Einstein Setup` | Click **Turn on Einstein** | Required before Agentforce can be enabled |
-| 3 | `Agentforce` | Click **Turn on Agentforce** | Required to create/publish the agent in Phase 6 |
-| 4 | `Digital Experiences → Settings` | Check **Enable Digital Experiences** → Save (pick any domain suffix, e.g. `<alias>-demo`) | The UI Bundle hosts inside an Experience Site |
-| 5 | `My Domain → Routing and Policies` | Under **Cookies**, UNCHECK *"Require first-party use of Salesforce cookies"* → Save | ⚠️ Critical — without this the Agentforce chat widget shows *"Authentication Error"* during the demo |
+| 3 | `Agentforce` | Click **Turn on Agentforce**. ⚠️ If the toggle doesn't appear right away, refresh the page — Setup sometimes caches the pre-Einstein state. | Required to create/publish the agent in Phase 6 |
+| 4 | `Digital Experiences → Settings` | Check **Enable Digital Experiences** → Save. Then go to **Digital Experiences → All Sites**, click **New Site**, then immediately click **Back to Setup** (you don't need to actually create a site). This forces the org to provision the React-hosting prerequisites. | The UI Bundle hosts inside an Experience Site, and the "New Site" click is what triggers the underlying React infra setup |
 
 Pause after each toggle and ask the user to confirm "done" before moving to the next one — they're click-fatigue prone and Setup's UI is slow.
 
