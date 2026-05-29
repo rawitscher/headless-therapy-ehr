@@ -123,9 +123,10 @@ Please handle the full setup automatically:
      `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash`
      then source it in the current shell:
      `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"`
-   - Install + activate + default to Node 22 LTS:
-     `nvm install --lts=iron && nvm use --lts=iron && nvm alias default 'lts/*'`
-     (Use `--lts=iron` for Node 20 if `iron` is preferred over `jod`.)
+   - Install + activate + default to Node 22 LTS (codename `jod`):
+     `nvm install --lts=jod && nvm use --lts=jod && nvm alias default 'lts/*'`
+     (If Node 22 is unavailable for any reason, fall back to Node 20
+     LTS with `--lts=iron`.)
    - Re-verify with `node --version` and `npm --version` in the SAME shell.
      If they still don't resolve, ask the user to open a fresh terminal
      and confirm — sometimes nvm needs a new shell.
