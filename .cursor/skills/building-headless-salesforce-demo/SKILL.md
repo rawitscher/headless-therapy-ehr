@@ -161,7 +161,7 @@ Have the user do these in the freshly-opened scratch org. Use the quick search b
 |---|---|---|---|
 | 1 | `multi` | Toggle **"React Development with Agentforce Vibes and Salesforce Multi-Framework (Beta)"** → On | Without this, deploying the UI Bundle fails with *"UIBundle Metadata API is not enabled"* |
 | 2 | `Einstein Setup` | Click **Turn on Einstein** | Required before Agentforce can be enabled |
-| 3 | `Agentforce` | Click **Turn on Agentforce**. ⚠️ If the toggle doesn't appear right away, refresh the page — Setup sometimes caches the pre-Einstein state. | Required to create/publish the agent in Phase 6 |
+| 3 | `Agentforce Agents` | Search **"Agentforce Agents"** (NOT just "Agentforce" — that lands on a different page and confuses users) and turn on the **Agentforce** toggle there. ⚠️ If the toggle doesn't appear right away, refresh the page — Setup sometimes caches the pre-Einstein state. | Required to create/publish the agent in Phase 6 |
 | 4 | `Digital Experiences → Settings` | Check **Enable Digital Experiences** → Save. Then go to **Digital Experiences → All Sites**, click **New Site**, then immediately click **Back to Setup** (you don't need to actually create a site). This forces the org to provision the React-hosting prerequisites. | The UI Bundle hosts inside an Experience Site, and the "New Site" click is what triggers the underlying React infra setup |
 
 Pause after each toggle and ask the user to confirm "done" before moving to the next one — they're click-fatigue prone and Setup's UI is slow. **Fire a desktop notification (see "Nudge the user" above) each time you hand a toggle back to them** — this is the longest manual-wait phase and the most common place a distracted user strands the build.
@@ -244,6 +244,7 @@ Customer-demo specifics on top of that:
 - **One hero detail page does 80% of the work** — see [industry-playbooks.md](industry-playbooks.md) for vertical-specific names: Patient 360 (healthcare), Member 360 (FSI), Constituent 360 (public sector), Order 360 (retail), Asset 360 (field service), Engagement 360 (prof services). Tabs are vertical-specific too — sessions/notes/billing for healthcare, accounts/transactions/risk for FSI, etc. Spend most of your time here.
 - **AI Insights tab pattern** — 2×2 grid of cards. The four standard categories generalize across verticals: (1) AI-drafted artifact (note / email / summary / disclosure), (2) churn or attrition risk, (3) domain-specific signal (clinical / financial / behavioral / operational), (4) engagement signal. Each card has a small "Agentforce" pill + sparkle icon. Hover state expands inline (don't use floating popovers — they fight the animation transforms). See the playbook for vertical-specific card content.
 - **Link to real CRM records** — every record in your static `demoData.ts` should have a `salesforceContactId` (or `salesforceAccountId`, `salesforceCaseId`) field. Display a clickable Salesforce ID badge in the header that links to `<INSTANCE_URL>/lightning/r/<SObject>/<id>/view`. This is the single highest-leverage trick — proves the demo is real.
+- **Add ONE write-back action button** ⭐ — a button on the hero record that *writes* to Salesforce (default: "Create follow-up task" → creates a real `Task` linked to the record), with a success state that links straight to the new record in Salesforce. This is the highest-impact moment after the CRM link: it proves the headless UI isn't read-only — it drives real Salesforce automation through a UI the customer designed. Uses a GraphQL mutation (Apollo is already wired, no Apex needed). **See [salesforce-action-button.md](salesforce-action-button.md) for the drop-in component, mutation, permissions, and per-vertical variations.** Build exactly one — more dilutes the moment and adds demo-day risk.
 
 ### Phase 5: Seed CRM data (30 min)
 
@@ -336,17 +337,39 @@ Mount this once in `appLayout.tsx` so the widget floats over every page. Add `pb
 - **Consolidation page:** A `Consolidation.tsx` page with a before/after layout: 5 logos in chaos on the left, the customer's branded React app on the right, arrow between. Caption: "X tools → 1 platform."
 - **MCP setup (optional, often flaky):** Configure a Salesforce Hosted MCP server + External Client App for `claude.ai`. See [mcp-claude-setup.md](mcp-claude-setup.md). **Recommendation:** show the Setup → MCP Servers page as a static slide rather than risk a live OAuth failure.
 
+### Phase 8: Wrap-up — hand the user a clear demo flow (5 min, DO NOT SKIP)
+
+The user just spent hours building and is often unsure how to actually *present* it. Close the loop explicitly:
+
+1. **Write `DEMO_TALKTRACK.md`** to the project root (template below), filled in with the customer's actual names, page routes, agent prompts, and the Salesforce record link. Not the generic template — the real, customer-specific version.
+2. **Fire a desktop notification** ("Demo is ready — here's your talk track").
+3. **Print the demo flow directly in chat** as a numbered walkthrough so they can read it without opening a file, AND tell them where the file lives. Use this exact closing format:
+
+> ✅ **Your demo is ready!** Here's the 6-step flow to present it:
+>
+> 1. **Open the app** — App Launcher → `<AppName>`. Land on `<hero route>`. *"Does this feel like your current tool?"*
+> 2. **Walk the 360** — open `<demo record name>`, tour the tabs, stop on the **AI Insights** tab. *"All Agentforce, all on-platform."*
+> 3. **Trigger the action** — click **<action button label>** on the record → show the Task/record it created in Salesforce. *"Custom UI, real Salesforce automation underneath."*
+> 4. **Click the CRM badge** — opens the real Salesforce record. *"It's still Salesforce — nothing's faked."*
+> 5. **Use the copilot** — open the chat, ask `"<suggested demo prompt>"`. *"AI on your platform, not bolted on."*
+> 6. **Close on consolidation** — open the Consolidation page. *"<N> tools → 1 platform."*
+>
+> 📄 Full talk track saved to **`DEMO_TALKTRACK.md`** in your project root — open it for the detailed script, fallback notes, and timing.
+
+Tailor the bracketed values to the actual build. If a step doesn't exist (e.g., no action button, no live agent), drop it from the list rather than leaving a placeholder.
+
 ## The talk track template
 
-End every build by writing a `DEMO_TALKTRACK.md` with this structure:
+Write `DEMO_TALKTRACK.md` (Phase 8) with this structure, filled in with the customer's real names/routes:
 
 ```markdown
 1. React app — "Does this feel familiar?" (hero page → 360 → AI cards → chat)
 2. Salesforce record — click the CRM link → "It's still Salesforce underneath"
-3. Flow — "The automation win" (screenshot or live)
-4. Agent Builder — "AI on your platform, not bolted on"
-5. (Optional) Claude + MCP — "And it's open"
-6. Consolidation page — "5 tools → 1 platform" close
+3. Action button — click it in the React UI → show the Task/record created in Salesforce
+4. Flow — "The automation win" (screenshot or live)
+5. Agent Builder — "AI on your platform, not bolted on"
+6. (Optional) Claude + MCP — "And it's open"
+7. Consolidation page — "N tools → 1 platform" close
 ```
 
 ## Critical gotchas (validated the hard way)
@@ -390,6 +413,7 @@ For a "real" build with proper review: multiply by 3.
 - [agent-script-template.md](agent-script-template.md) — Full Agent Script template with hub-and-spoke pattern
 - [contact-record-page.md](contact-record-page.md) — Reusable FlexiPage template for the Salesforce-side Contact record (Phase 5.5)
 - [graphql-reference.md](graphql-reference.md) — Salesforce GraphQL API shapes, codegen flow, hybrid live/static pattern (read before writing ANY GraphQL query)
+- [salesforce-action-button.md](salesforce-action-button.md) — Drop-in write-back action button (create a Task / Case / field update from the React UI via GraphQL mutation) — the highest-impact "real platform underneath" demo moment (Phase 4)
 - [mcp-claude-setup.md](mcp-claude-setup.md) — Step-by-step Claude.ai ↔ Salesforce MCP setup
 - [demo-data-pattern.md](demo-data-pattern.md) — `demoData.ts` structure + Contact field examples
 

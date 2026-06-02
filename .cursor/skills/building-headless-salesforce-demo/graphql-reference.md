@@ -100,20 +100,31 @@ query AtRiskMembers {
 
 Supported operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `like`, `in`, `nin`, `and`, `or`.
 
-### Mutations (rare in demos, but here for completeness)
+### Mutations (create/update/delete — GA in API v66+)
+
+GraphQL mutations are the recommended way to do write-back from the UI Bundle (no Apex needed). The most common demo use is a **write-back action button** — see [salesforce-action-button.md](salesforce-action-button.md) for the full drop-in pattern (create a Task, Case, or field update with a success link back into Salesforce). Quick shapes:
 
 ```graphql
+# Create — note PascalCase `<Object>Create` and `Record { ... }` return
+mutation CreateTask($input: TaskCreateInput!) {
+  uiapi {
+    TaskCreate(input: $input) {
+      Record { Id Subject { value } }
+    }
+  }
+}
+
+# Update — requires Id; returns Record in v66+ (returned `success` boolean in v59–65)
 mutation UpdateContact($id: ID!, $input: ContactUpdateInput!) {
   uiapi {
-    contactUpdate(input: { Id: $id, Contact: $input }) {
-      Record {
-        Id
-        FirstName { value }
-      }
+    ContactUpdate(input: { Id: $id, Contact: $input }) {
+      Record { Id FirstName { value } }
     }
   }
 }
 ```
+
+Mutation guidelines: use constituent fields for compound data (`FirstName`/`LastName`, not `Name`), raw values for numbers/currency (no symbols), `YYYY-MM-DD` for dates, and only `create` can return `Record` fields in v59–65. Only UI-API-supported SObjects can be mutated.
 
 ## React/Apollo usage pattern
 
