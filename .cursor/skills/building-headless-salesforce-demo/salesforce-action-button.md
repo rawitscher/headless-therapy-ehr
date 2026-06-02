@@ -171,14 +171,11 @@ This is the line that lands: *"Custom UI, real Salesforce platform — the autom
 
 The button alone proves write-back. To prove **platform automation**, add a record-triggered Flow that fires *the instant* the React button creates the Task — so one click in the custom UI visibly cascades into Salesforce automation. This is the strongest version of the "custom UI, full platform underneath" moment.
 
-> **Demo framing:** *"Watch — I click this one button in our custom app… and Salesforce automatically stamps a priority, posts to the record's Chatter feed, and could route it to a queue. None of that logic lives in the React app. It's all platform automation — the same engine running for thousands of customers."*
+> **Demo framing:** *"Watch — I click this one button in our custom app… and Salesforce automatically flags it as high priority. That logic doesn't live in the React app. It's platform automation — the same engine running for thousands of customers."*
 
 ### The Flow (record-triggered on Task create)
 
-A **record-triggered flow** on `Task`, "A record is created", that does demo-visible, low-risk work. Good safe actions (pick 1–2):
-- Set `Task.Priority = High` and append a tag to `Subject` (e.g., `[Auto-triaged]`) via an early-update assignment — instant, no async risk.
-- Post a **Chatter post** to the parent record: *"Follow-up task auto-created from the &lt;App&gt; app and triaged by Flow."* — highly visible on the timeline.
-- (Optional, riskier live) assign to a queue / send an email alert — describe it, don't necessarily run it live.
+A **before-save record-triggered flow** on `Task`, "A record is created", that sets `Task.Priority = High` and appends a tag to `Subject` (e.g., `[Auto-triaged]`). Before-save is ideal here: it's synchronous, requires no DML, and the change is on the committed record immediately — so when the user clicks through right after pressing the button, the Priority is already High.
 
 Entry condition: keep it tight so it only fires on the demo's buttons, not every Task. Filter on the `Subject` text the button writes (e.g., `Subject` contains `flagged from`), so unrelated Tasks don't trigger it.
 
@@ -189,16 +186,13 @@ sf project deploy start --source-dir force-app/main/default/flows/<FlowName>.flo
 # Record-triggered flows deploy Active — verify in Setup → Flows
 ```
 
-⚠️ Use the **`generating-flow`** skill to author the actual `.flow-meta.xml` — it owns the correct Flow XML shape (record-triggered, before-save vs after-save, decision/assignment elements). Don't hand-write Flow XML. Quick guidance for this case:
-- **Before-save** update flow for the `Priority`/`Subject` stamp (fastest, no DML, fires synchronously before the record saves — the change is visible immediately when the user clicks through).
-- **After-save** flow if you also post to Chatter (Chatter posts need the record committed first).
+⚠️ Use the **`generating-flow`** skill to author the actual `.flow-meta.xml` — it owns the correct Flow XML shape (record-triggered before-save, entry conditions, assignment elements). Don't hand-write Flow XML.
 
 ### The demo beat (sequence it right after the button)
 
 1. Click the action button → *"Task created in Salesforce."*
 2. Click **Open it →** → the Task opens, already showing **Priority: High** and the `[Auto-triaged]` subject tag.
-3. Open the parent record's **Chatter / Activity timeline** → the auto-post is already there.
-4. Land the line: *"One click in our UI, and the platform did the rest."*
+3. Land the line: *"One click in our UI, and the platform automation did the rest."*
 
 ### Gotchas (Flow-specific)
 
@@ -206,8 +200,7 @@ sf project deploy start --source-dir force-app/main/default/flows/<FlowName>.flo
 |---|---|---|
 | Flow didn't fire on the React-created Task | Entry condition too narrow, or flow inactive | Confirm the `Subject` filter matches what the button writes; verify the flow is **Active** in Setup → Flows |
 | Flow fires on every Task in the org | No entry condition | Add a `Subject contains "<button text>"` entry condition |
-| Chatter post step fails | Used a before-save flow (record not committed) | Move the Chatter post to an after-save flow |
-| Priority/Subject change not visible on click-through | Used after-save + the UI cached the old record | Use a before-save update so the stamp is on the committed record immediately |
+| Priority/Subject change not visible on click-through | Used an after-save flow + the UI cached the old record | Use a **before-save** update so the stamp is on the committed record immediately |
 
 ### Static fallback (if live Flow is risky)
 

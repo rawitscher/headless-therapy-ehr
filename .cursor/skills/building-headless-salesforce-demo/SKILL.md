@@ -333,7 +333,7 @@ Mount this once in `appLayout.tsx` so the widget floats over every page. Add `pb
 
 ### Phase 7: Flow + MCP + close (30 min)
 
-- **Flow:** Two good options — (a) **best if you built the Phase 4 write-back action button:** a record-triggered flow that fires the instant the button creates the Task, so one click in the custom UI visibly cascades into platform automation (priority stamp, Chatter post, routing). See the "Make the automation story louder" section of [salesforce-action-button.md](salesforce-action-button.md). (b) Otherwise, a schedule-triggered flow that does something the customer's current "broken Zapier" does. Either way, a Flow Builder screenshot is the safe fallback; live execution is optional and riskier. Use the `generating-flow` skill to author the `.flow-meta.xml` — don't hand-write Flow XML.
+- **Flow:** Two good options — (a) **best if you built the Phase 4 write-back action button:** a record-triggered flow that fires the instant the button creates the Task, so one click in the custom UI visibly cascades into platform automation (auto-flag the Task as high priority). See the "Make the automation story louder" section of [salesforce-action-button.md](salesforce-action-button.md). (b) Otherwise, a schedule-triggered flow that does something the customer's current "broken Zapier" does. Either way, a Flow Builder screenshot is the safe fallback; live execution is optional and riskier. Use the `generating-flow` skill to author the `.flow-meta.xml` — don't hand-write Flow XML.
 - **Consolidation page:** A `Consolidation.tsx` page with a before/after layout: 5 logos in chaos on the left, the customer's branded React app on the right, arrow between. Caption: "X tools → 1 platform."
 - **MCP setup (optional, often flaky):** Configure a Salesforce Hosted MCP server + External Client App for `claude.ai`. See [mcp-claude-setup.md](mcp-claude-setup.md). **Recommendation:** show the Setup → MCP Servers page as a static slide rather than risk a live OAuth failure.
 
@@ -349,14 +349,25 @@ The user just spent hours building and is often unsure how to actually *present*
 >
 > 1. **Open the app** — App Launcher → `<AppName>`. Land on `<hero route>`. *"Does this feel like your current tool?"*
 > 2. **Walk the 360** — open `<demo record name>`, tour the tabs, stop on the **AI Insights** tab. *"All Agentforce, all on-platform."*
-> 3. **Trigger the action** — click **<action button label>** on the record → open the created Task in Salesforce (if you built the Flow, point out the auto-stamped Priority + Chatter post). *"One click in our UI, and the platform automation did the rest."*
-> 4. **Click the CRM badge** — opens the real Salesforce record. *"It's still Salesforce — nothing's faked."*
+> 3. **Trigger the action** — click **<action button label>** on the record → open the created Task in Salesforce (if you built the Flow, point out the auto-stamped High priority). *"One click in our UI, and the platform automation did the rest."*
+> 4. **Click the CRM badge** — opens the real Salesforce record: `<INSTANCE_URL>/lightning/r/<SObject>/<recordId>/view`. *"It's still Salesforce — nothing's faked."*
 > 5. **Use the copilot** — open the chat, ask `"<suggested demo prompt>"`. *"AI on your platform, not bolted on."*
 > 6. **Close on consolidation** — open the Consolidation page. *"<N> tools → 1 platform."*
 >
 > 📄 Full talk track saved to **`DEMO_TALKTRACK.md`** in your project root — open it for the detailed script, fallback notes, and timing.
 
 Tailor the bracketed values to the actual build. If a step doesn't exist (e.g., no action button, no live agent), drop it from the list rather than leaving a placeholder.
+
+**Quick-open links in `DEMO_TALKTRACK.md`** — include direct links ONLY for targets with stable URL patterns, so a leader can pre-open tabs before the demo. Fill in the real `<INSTANCE_URL>` (from `sf org display`) and record IDs (from Phase 5):
+
+| Target | Link to include | Reliable? |
+|---|---|---|
+| Salesforce Contact/Account record | `<INSTANCE_URL>/lightning/r/<SObject>/<recordId>/view` | ✅ Yes — use the real IDs from Phase 5 |
+| The Flow (Setup) | `<INSTANCE_URL>/lightning/setup/Flows/home` | ✅ Yes |
+| Agent Builder (Setup) | `<INSTANCE_URL>/lightning/setup/EinsteinCopilot/home` | ✅ Mostly |
+| The React app pages (hero / 360 / consolidation) | ❌ **Do NOT hardcode a deep link** | ❌ No — the deployed app URL pattern varies per org and a dead link on demo day is the exact failure Phase 3E warns about |
+
+For the React app pages, write **"App Launcher → `<AppName>` → navigate to `<route>`"** instead of a URL. Never guess the deployed app's direct URL — even in the talk track.
 
 ## The talk track template
 
