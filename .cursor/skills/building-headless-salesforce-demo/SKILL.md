@@ -58,6 +58,16 @@ How to detect and verify prior work:
 
 Never blindly rebuild over a partially-complete org — at best it wastes quota, at worst it creates duplicate records/agents.
 
+## How to communicate while running this skill (IMPORTANT)
+
+The audience is busy, often non-technical SEs/AEs reading in a chat panel. Three rules for every message you send during the build:
+
+1. **Put the user's action items LAST.** Anything the user must DO (Setup toggles, a confirmation, an answer, the restart) goes at the very bottom of your message, as the final thing they read — never buried above status text or explanation. A teammate had to scroll up to find the Setup toggles because they were above other agent output. The 🔔 **WAITING ON YOU** banner (below) should be the literal last block in the message.
+2. **Be concise — don't write essays as you progress.** Lead with a one-line status of what you just did, then the ask. Skip play-by-play narration, long recaps, and re-explaining things you already explained. If you must include reference detail, keep it short or put it in a file, not the chat. Err on the side of brevity at every phase.
+3. **Make the takeaway unmistakable at the end.** When you finish (Phase 8) or hand off a deliverable, state the deliverable plainly as the closing item (see Phase 8 for the demo flow / click-path handoff).
+
+These apply throughout — not just at wait points.
+
 ## Nudge the user whenever you're blocked on them (IMPORTANT)
 
 This skill is often run by busy sales leaders who walk away from their laptop mid-build. Several steps require the human to do something (flip a Setup toggle, restart Cursor, activate a page, answer a scoping question). If the agent silently waits, the build stalls for minutes or hours.
@@ -191,6 +201,8 @@ Have the user do these in the freshly-opened scratch org. Use the quick search b
 | 4 | `Digital Experiences → Settings` | Check **Enable Digital Experiences** → Save. Then go to **Digital Experiences → All Sites**, click **New Site**, then immediately click **Back to Setup** (you don't need to actually create a site). This forces the org to provision the React-hosting prerequisites. | The UI Bundle hosts inside an Experience Site, and the "New Site" click is what triggers the underlying React infra setup |
 
 Pause after each toggle and ask the user to confirm "done" before moving to the next one — they're click-fatigue prone and Setup's UI is slow. **Fire a desktop notification (see "Nudge the user" above) each time you hand a toggle back to them** — this is the longest manual-wait phase and the most common place a distracted user strands the build.
+
+⚠️ **Present each toggle as the LAST thing in your message** (the exact search term + what to click, as the closing 🔔 WAITING ON YOU block). Don't put the toggle instruction above other text — a teammate had to scroll up to find it. One toggle per message, instruction last.
 
 ### Phase 3: Scaffold the UI bundle (10 min)
 
@@ -406,24 +418,22 @@ Mount this once in `appLayout.tsx` so the widget floats over every page. Add `pb
 
 ### Phase 8: Wrap-up — hand the user a clear demo flow (5 min, DO NOT SKIP)
 
-The user just spent hours building and is often unsure how to actually *present* it. Close the loop explicitly:
+The user just spent hours building and is often unsure how to actually *present* it. The **demo flow / click-path doc is the headline takeaway of the whole build** — make it impossible to miss. Close the loop:
 
-1. **Write `DEMO_TALKTRACK.md`** to the project root (template below), filled in with the customer's actual names, page routes, agent prompts, and the Salesforce record link. Not the generic template — the real, customer-specific version.
-2. **Fire a desktop notification** ("Demo is ready — here's your talk track").
-3. **Print the demo flow directly in chat** as a numbered walkthrough so they can read it without opening a file, AND tell them where the file lives. Use this exact closing format:
+1. **Write `DEMO_TALKTRACK.md`** to the project root (template below), filled in with the customer's real names, page routes, agent prompts, and Salesforce record links. The customer-specific version, not the generic template.
+2. **Fire a desktop notification** ("Demo is ready — here's your click path").
+3. **Make the final chat message short and end with the deliverable + the flow.** Lead with one line that names the file as the takeaway, then the numbered click path as the closing block. Don't bury it under a build recap. Use this format:
 
-> ✅ **Your demo is ready!** Here's the 6-step flow to present it:
+> ✅ **Demo's ready. Your click path is saved to `DEMO_TALKTRACK.md`** (project root) — open it for the full script, links, and fallbacks. Here's the path to run it live:
 >
-> 1. **Open the app** — App Launcher → `<AppName>`. Land on `<hero route>`. *"Does this feel like your current tool?"*
-> 2. **Walk the 360** — open `<demo record name>`, tour the tabs, stop on the **AI Insights** tab. *"All Agentforce, all on-platform."*
-> 3. **Trigger the action** — click **<action button label>** on the record → open the created Task in Salesforce (if you built the Flow, point out the auto-stamped High priority). *"One click in our UI, and the platform automation did the rest."*
-> 4. **Click the CRM badge** — opens the real Salesforce record: `<INSTANCE_URL>/lightning/r/<SObject>/<recordId>/view`. *"It's still Salesforce — nothing's faked."*
-> 5. **Use the copilot** — open the chat, ask `"<suggested demo prompt>"`. *"AI on your platform, not bolted on."*
+> 1. **Open the app** — App Launcher → `<AppName>` → `<hero route>`. *"Does this feel like your current tool?"*
+> 2. **Walk the 360** — open `<demo record name>`, stop on the **AI Insights** tab. *"All Agentforce, all on-platform."*
+> 3. **Trigger the action** — click **<action button label>** → open the created Task (point out the auto-stamped High priority). *"One click in our UI, the platform did the rest."*
+> 4. **Click the CRM badge** — opens the real record: `<INSTANCE_URL>/lightning/r/<SObject>/<recordId>/view`. *"Still Salesforce — nothing's faked."*
+> 5. **Use the copilot** — ask `"<suggested demo prompt>"`. *"AI on your platform, not bolted on."*
 > 6. **Close on consolidation** — open the Consolidation page. *"<N> tools → 1 platform."*
->
-> 📄 Full talk track saved to **`DEMO_TALKTRACK.md`** in your project root — open it for the detailed script, fallback notes, and timing.
 
-Tailor the bracketed values to the actual build. If a step doesn't exist (e.g., no action button, no live agent), drop it from the list rather than leaving a placeholder.
+Tailor the bracketed values to the actual build. Drop any step that doesn't exist (no action button, no live agent) rather than leaving a placeholder.
 
 **Quick-open links in `DEMO_TALKTRACK.md`** — include direct links ONLY for targets with stable URL patterns, so a leader can pre-open tabs before the demo. Fill in the real `<INSTANCE_URL>` (from `sf org display`) and record IDs (from Phase 5):
 
