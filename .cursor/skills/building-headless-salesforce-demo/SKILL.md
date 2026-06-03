@@ -151,6 +151,8 @@ Write the answers down. Re-reference during build to avoid scope creep.
 
 The UI Bundle Multi-Framework Beta requires **manual toggles in Setup** that cannot be enabled via `project-scratch-def.json`. This is the #1 source of mid-build pain.
 
+> 💡 **If the user seems confused about "Dev Hub" vs "scratch org," explain it in one line before proceeding:** the **Dev Hub** is their permanent org that's allowed to *create* temporary orgs (they log into it once); the **scratch org** is the fresh, disposable org you actually build the demo in (created from the Dev Hub, auto-expires in ~30 days). Everything in this build deploys to the *scratch* org, not the Dev Hub.
+
 **Step 2A — Create the scratch org and open it:**
 
 ⚠️ **Pre-flight: check the active scratch-org limit FIRST.** Dev Hubs cap active scratch orgs (commonly 3). If you're at the cap, creation fails with `LIMIT_EXCEEDED ... reached its active scratch org limit` after you've already started. Check before attempting:
@@ -466,6 +468,7 @@ Write `DEMO_TALKTRACK.md` (Phase 8) with this structure, filled in with the cust
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `git: command not found`, or nvm/npm installs fail to compile on macOS | Xcode Command Line Tools missing | Run `xcode-select --install` (pops a GUI installer); wait for it to finish, then retry. Check with `xcode-select -p`. |
 | `npm: command not found` during Phase 3 scaffolding, or weird/empty output from `npm install` | Node installed without npm (Homebrew node-only, corepack-only, partial nvm), even on a "modern" version like v22.x | Reinstall Node via `nvm install --lts && nvm use --lts && nvm alias default 'lts/*'`; confirm BOTH `node --version` and `npm --version` print before retrying. Do not work around with corepack/npx. |
 | "UIBundle Metadata API is not enabled" on deploy | React Multi-Framework Beta toggle off | Setup → search "multi" → enable React Multi-Framework (Beta) |
 | Agent chat shows "Authentication Error" | Cookie restriction on | Setup → My Domain → uncheck first-party cookies |

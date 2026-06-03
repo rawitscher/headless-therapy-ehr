@@ -56,6 +56,20 @@ Realistic time budget:
 Ready? Two questions:
 ```
 
+### Step 1.5: Have you run this before? (speed mode)
+
+Before the full greeting/prereq flow, ask:
+
+```
+Quick one first — have you built one of these demos with me before, or
+is this your first time? (first time / done it before)
+```
+
+- **First time:** run the full flow (Steps 1–4 with all the explainers).
+- **Done it before:** skip the expectation-setting and prereq hand-holding. They already have the repo + skill installed, so send the **speed-mode prompt** (Step 3, "Returning user" variant) that tells Cursor to detect the existing `~/.cursor/skills/building-headless-salesforce-demo` + cloned repo, `git pull` for the latest, and jump straight to Phase 1 scoping without re-installing anything. Keep it terse — they don't need the rationale again.
+
+(If you can't tell, default to first-time.)
+
 ### Step 2: Minimal prereq check (just 2 things)
 
 ```
@@ -107,7 +121,16 @@ the pattern at https://github.com/rawitscher/headless-therapy-ehr.
 
 Please handle the full setup automatically:
 
-1. **Check Node.js AND npm are both installed and on an active LTS line,
+1. **Check Xcode Command Line Tools are installed (macOS) — they provide
+   `git` and the compilers nvm/npm need.**
+   Run `xcode-select -p`. If it errors / prints nothing (or `git` is
+   missing), run `xcode-select --install` for me — this pops a GUI
+   installer. Then tell me to click through it and reply "done" once it
+   finishes; wait for me before continuing (the install can take several
+   minutes and you can't proceed without it). If it's already installed,
+   say so and move on. (Skip this step on Linux/Windows.)
+
+2. **Check Node.js AND npm are both installed and on an active LTS line,
    then auto-remediate via nvm if not.**
    Run BOTH of these and confirm each prints a version (not an error):
    - `node --version` — must be on an active LTS line: **v20.x or v22.x**.
@@ -140,21 +163,24 @@ Please handle the full setup automatically:
      shadow nvm in non-login shells; they can `brew uninstall node`
      themselves later if they want a clean setup.
 
-2. **Install the Salesforce CLI** if not already installed:
+3. **Install the Salesforce CLI** if not already installed:
    `npm install -g @salesforce/cli`
    Verify with `sf --version`. If install needs sudo, stop and tell me.
 
-3. **Clone the reference repo** to my home directory:
+4. **Ask me where to create the project before cloning.** Don't default
+   to my home directory silently. Ask: "Where should I put the project?
+   I recommend `~/Documents/se-demos/` — reply with that, your own path,
+   or 'default'." Create the directory if needed, then clone into it:
    `git clone https://github.com/rawitscher/headless-therapy-ehr.git
-    ~/headless-therapy-ehr`
+    <chosen-dir>/headless-therapy-ehr`
 
-4. **Install the Cursor skill** so this chat (and future chats) has
+5. **Install the Cursor skill** so this chat (and future chats) has
    the full playbook:
    `mkdir -p ~/.cursor/skills && cp -r
-    ~/headless-therapy-ehr/.cursor/skills/building-headless-salesforce-demo
+    <chosen-dir>/headless-therapy-ehr/.cursor/skills/building-headless-salesforce-demo
     ~/.cursor/skills/`
 
-5. **Tell me to restart Cursor** so the skill loads, then continue
+6. **Tell me to restart Cursor** so the skill loads, then continue
    from where you left off when I come back. When you hand control
    back to me for ANY manual step (restarting Cursor, flipping Setup
    toggles, answering a question), first fire a desktop notification
@@ -162,7 +188,7 @@ Please handle the full setup automatically:
    `osascript -e 'display notification "<what you need>" with title "Headless Demo Build" subtitle "Cursor needs you" sound name "Glass"'`
    (macOS only; if it errors, just continue — don't block on it.)
 
-6. After restart, **use the `building-headless-salesforce-demo` skill**
+7. After restart, **use the `building-headless-salesforce-demo` skill**
    and walk me through the Phase 1 scoping questions. **Start with
    Step 1A: ask me for the customer name AND website URL FIRST,
    before anything else.**
@@ -179,22 +205,27 @@ Please handle the full setup automatically:
    (persona, demo date, agent role, data strategy, etc.). Use the
    matching vertical playbook from the skill's `industry-playbooks.md`.
 
-7. **Help me log into my Dev Hub** (`sf org login web --set-default-dev-hub`)
-   and then **create a scratch org** following the steps in
-   `~/headless-therapy-ehr/ccg-demo/How to Get a Scratch Org for Headless
-   Salesforce Demo Dev.pdf`. Use the minimal `project-scratch-def.json`
-   from that doc — features only: `Einstein1AIPlatform`. Don't add
-   DataCloud or Agentforce as features.
+8. **Help me log into my Dev Hub, then create a scratch org.** Quick
+   plain-English context for me first (I may not know the difference):
+   - My **Dev Hub** is my permanent Salesforce org that has permission
+     to *mint* temporary orgs. I log into it ONCE:
+     `sf org login web --set-default-dev-hub`.
+   - A **scratch org** is the fresh, disposable org we actually build
+     the demo in — created from the Dev Hub, expires in ~30 days. This
+     is where everything gets deployed.
+   Then create the scratch org per the skill's Phase 2A (check the
+   active-scratch-org limit first; minimal `project-scratch-def.json`).
 
-8. Once the scratch org is created, **stop and tell me exactly which
+9. Once the scratch org is created, **stop and tell me exactly which
    manual toggles to flip in Salesforce Setup** — pull the exact list
    from the skill's SKILL.md Phase 2B table (Multi-Framework Beta,
-   Einstein, Agentforce, Digital Experiences, My Domain cookie
-   setting). Don't try to flip these yourself — they're UI-only.
+   Einstein, Agentforce Agents, Digital Experiences). Present them one
+   at a time, instruction LAST in each message. Don't try to flip these
+   yourself — they're UI-only.
 
-9. After I confirm the toggles, drive the rest of the build, asking
-   for input only when needed. Default to demo-safe choices: static
-   data, screenshot Flow, agent with 3 subagents.
+10. After I confirm the toggles, drive the rest of the build, asking
+    for input only when needed. Default to demo-safe choices: static
+    data, screenshot Flow, agent with 3 subagents.
 
 Start with Step 1 now.
 
@@ -203,6 +234,36 @@ Start with Step 1 now.
 Once you've pasted, Cursor will take over. Come back here only if you
 get stuck on something it can't unblock (Salesforce login issues,
 missing org features, etc.).
+```
+
+#### Returning-user (speed mode) prompt
+
+If they said "done it before" in Step 1.5, send THIS leaner prompt instead of the full one above:
+
+```
+Welcome back. In Cursor, open a New Agent and paste this:
+
+---PASTE BELOW THIS LINE---
+
+I've built headless Salesforce demos with this skill before — go in
+speed mode. Skip the explainers.
+
+1. Confirm the toolchain quickly: `xcode-select -p`, `node --version`,
+   `npm --version`, `sf --version` all OK (only remediate if something's
+   actually broken — see the skill for how).
+2. I already have the repo and the `building-headless-salesforce-demo`
+   Cursor skill installed. `cd` into my existing
+   `headless-therapy-ehr` clone and `git pull` for the latest skill,
+   then re-copy it into `~/.cursor/skills/` if it changed. Don't
+   re-clone or re-install from scratch.
+3. Use the `building-headless-salesforce-demo` skill and go straight to
+   Phase 1 scoping — ask me for customer name + website URL first.
+4. Drive the rest with demo-safe defaults, pausing only for the manual
+   Setup toggles and anything you genuinely can't do yourself.
+
+Start now.
+
+---PASTE ABOVE THIS LINE---
 ```
 
 ---
@@ -219,12 +280,11 @@ click around in Setup for you). Do them in this order:
   1. Setup → quick search "multi" → enable "React Development with
      Agentforce Vibes and Salesforce Multi-Framework (Beta)"
   2. Setup → quick search "Einstein Setup" → Turn on Einstein
-  3. Setup → quick search "Agentforce" → Turn on Agentforce
+  3. Setup → quick search "Agentforce Agents" → Turn on Agentforce
+     (if the toggle doesn't show, refresh the page)
   4. Setup → quick search "Digital Experiences" → Settings → check
-     "Enable Digital Experiences" → save (pick any domain suffix)
-  5. Setup → My Domain → Routing and Policies → uncheck "Require
-     first party use of Salesforce cookies" → save (critical — chat
-     widget breaks without it)
+     "Enable Digital Experiences" → save. Then Digital Experiences →
+     All Sites → New Site → Back to Setup (provisions the React infra)
 
 Heads up on logins:
   • Cursor will ask you to log into your Dev Hub once (browser opens)
