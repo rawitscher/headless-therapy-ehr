@@ -46,6 +46,18 @@ If you (the agent) were just installed as a skill and the user has restarted Cur
 
 Once they reply, proceed normally. Do not assume any prior state — re-ask Phase 1 scoping questions cleanly.
 
+## Resuming a partial build (verify, don't rebuild)
+
+Demos are often run with overlap — a parallel/prior run of this same skill may have already built some phases against the same org while the user was flipping toggles, or the user is re-invoking you after a break. **Before building anything, check whether prior work exists, and if it's consistent, switch to "audit + finish the gaps" instead of rebuilding from scratch.** A stress-test run saved hours and a lot of quota this way.
+
+How to detect and verify prior work:
+1. **Files:** look for an existing project dir / UI bundle / committed components. Check file timestamps — work newer than your scaffold step signals a parallel run.
+2. **Org:** query the org for what's already there — `sf data query` for the demo records (do the expected Contact/Account IDs exist?), check for the deployed UI bundle, and look for a published agent (Bot ID `0Xx...`).
+3. **Cross-check consistency:** confirm the prebuilt artifacts agree with each other — e.g., the instance URL, the Salesforce record IDs in `demoData.ts`, and the `agentId` in the Copilot component all match what's actually in the org. If they're consistent, trust the prior work.
+4. **Switch modes:** if consistent prior work is found, tell the user you detected it and are switching to **audit-and-finish** (verify each phase's output, fill only the gaps) rather than rebuilding. If it's inconsistent or you can't verify, say so and confirm with the user before overwriting anything.
+
+Never blindly rebuild over a partially-complete org — at best it wastes quota, at worst it creates duplicate records/agents.
+
 ## Nudge the user whenever you're blocked on them (IMPORTANT)
 
 This skill is often run by busy sales leaders who walk away from their laptop mid-build. Several steps require the human to do something (flip a Setup toggle, restart Cursor, activate a page, answer a scoping question). If the agent silently waits, the build stalls for minutes or hours.
@@ -86,9 +98,9 @@ This is the single highest-information input — it determines brand colors, typ
 
 **If the user provides a real customer + URL:**
 
-1. **Auto-fetch the homepage** using your web fetch tool. Extract:
-   - Primary + secondary brand colors (from CSS, logo, hero imagery)
-   - Font family (look at the `font-family` declarations and Google Fonts links in the HTML)
+1. **Auto-fetch the homepage — get the RAW HTML, not just rendered text.** ⚠️ A plain rendered-text fetch strips CSS, colors, and font declarations, which is exactly what you need for branding. Pull the raw markup (e.g., `curl -sL <url>`) and inspect it for:
+   - Primary + secondary brand colors — grep for hex codes (`#[0-9a-fA-F]{3,6}`), CSS custom properties (`--*-color`), and theme/`<meta name="theme-color">` values
+   - Font family — grep `font-family` declarations and Google Fonts `<link href="...fonts.googleapis.com...">` tags
    - Product/feature terminology (what do they call their core noun — "Members"? "Clients"? "Cases"? "Orders"?)
    - Tone (formal/clinical, warm/human, fast/efficient, etc.)
 2. **Present a 4–6 line "brand summary"** back to the user and ask them to confirm/adjust before proceeding. Example: *"Got it — Regional Trust Bank. From their site: navy `#0B2545` primary, gold `#C8A951` accent, Inter font, they call account holders 'Members', tone is formal/trustworthy. Sound right?"*
@@ -131,16 +143,30 @@ The UI Bundle Multi-Framework Beta requires **manual toggles in Setup** that can
 
 **Step 2A — Create the scratch org and open it:**
 
+⚠️ **Pre-flight: check the active scratch-org limit FIRST.** Dev Hubs cap active scratch orgs (commonly 3). If you're at the cap, creation fails with `LIMIT_EXCEEDED ... reached its active scratch org limit` after you've already started. Check before attempting:
+
+```bash
+sf org list limits -o <devhub> | grep -i scratch   # look at ActiveScratchOrgs remaining
+```
+
+If `ActiveScratchOrgs` remaining is 0, **ask the user which existing scratch org to delete** (`sf org list` to show them) — this is destructive, so never auto-delete. Then `sf org delete scratch -o <alias> -p` and proceed.
+
+> 💡 **`sf` stdout pollution (applies to ALL `sf ... --json` calls):** the CLI sometimes prints an "update available" warning that corrupts `--json` output. Always parse defensively — append `2>/dev/null` and slice to the first `{`. A reliable Python pattern: `sf ... --json 2>/dev/null | python3 -c "import sys,json; s=sys.stdin.read(); print(json.loads(s[s.find('{'):]))"`. Or pre-strip with `sed -n '/^{/,$p'` before piping to a JSON parser.
+
 Use this `config/project-scratch-def.json`:
 
 ```json
 {
+  "orgName": "<Customer> Headless Demo Org",
+  "edition": "Developer",
   "features": ["Einstein1AIPlatform"],
   "settings": {
-    "einsteinGptPlatformSettings": { "enableEinsteinGptPlatform": true }
+    "einsteinGptSettings": { "enableEinsteinGptPlatform": true }
   }
 }
 ```
+
+⚠️ **The settings key is `einsteinGptSettings`, NOT `einsteinGptPlatformSettings`.** A stress-test run used `einsteinGptPlatformSettings` and the org created but the settings deploy failed with *"The object 'EinsteinGptPlatform' of type Settings metadata does not exist"* — leaving a half-broken org. If you hit that error on ANY Dev Hub, **drop the entire `settings` block and go features-only** (`{ "orgName": "...", "edition": "Developer", "features": ["Einstein1AIPlatform"] }`) — the Phase 2B manual toggles enable Einstein + Agentforce anyway, so the settings block is a convenience, not a requirement.
 
 ⚠️ Do NOT try to add `DataCloud`, `CustomerDataPlatform`, `AgentforceVibeForMultiFramework`, or `Agentforce` as features — these names are wrong or unavailable on most Dev Hubs. Just use `Einstein1AIPlatform`.
 
@@ -179,10 +205,12 @@ If the directory doesn't exist, create it (`mkdir -p ~/Documents/se-demos`), the
 ```bash
 sf project generate --name <customer>-demo --template empty
 cd <customer>-demo
-sf template generate ui-bundle --name <AppName>
+sf template generate ui-bundle --name <AppName> --template reactbasic
 cd force-app/main/default/uiBundles/<AppName>
 npm install
 ```
+
+⚠️ **The `--template reactbasic` flag is REQUIRED.** Without it, `sf template generate ui-bundle` defaults to `--template default`, which scaffolds a **static HTML "Base Web App"** (just `index.html` + meta, NO `package.json`, NO React) — and the next `npm install` fails with `ENOENT ... package.json`. The CLI options are `default | reactbasic`; you want `reactbasic`. If you somehow scaffolded the wrong one, delete the bundle folder and regenerate with the flag.
 
 **Step 3C — Verify `ui-bundle.json` `outputDir`** ⚠️
 
@@ -240,6 +268,21 @@ Sanity-check by grepping for `patient`, `clinician`, `session`, `PHQ`, `therapy`
 Customer-demo specifics on top of that:
 
 - **Brand the global CSS** — define 4–6 brand color CSS variables in `src/styles/global.css` (`--<brand>-primary`, `--<brand>-bg`, etc.) and use them everywhere. Import the customer's actual font family from Google Fonts. Add a few subtle keyframe animations (`fadeUp`, `sparkleIn`, `pulse`) — they make the AI cards feel alive.
+  - ⚠️ **Google Fonts are CSP-blocked by default in-org — register Trusted Sites or the brand font silently won't load** (the page degrades to a fallback font with no hard error; the demo just looks "off"). The moment you import any Google Font, add `CspTrustedSite` metadata for **both** hosts — `fonts.googleapis.com` (the stylesheet) and `fonts.gstatic.com` (the woff2 files) — each marked applicable to **style-src AND font-src**:
+
+```xml
+<!-- force-app/main/default/cspTrustedSites/GoogleFontsStylesheet.cspTrustedSite-meta.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<CspTrustedSite xmlns="http://soap.sforce.com/2006/04/metadata">
+    <endpointUrl>https://fonts.googleapis.com</endpointUrl>
+    <context>All</context>
+    <isActive>true</isActive>
+    <isApplicableToStyleSrc>true</isApplicableToStyleSrc>
+    <isApplicableToFontSrc>true</isApplicableToFontSrc>
+</CspTrustedSite>
+```
+
+  Repeat with a second file for `https://fonts.gstatic.com`. Deploy them with the rest of your metadata. **Alternative (more robust for high-stakes demos): self-host the fonts** — download the woff2 files into the bundle and `@font-face` them locally, which sidesteps CSP entirely. Either works; pick self-hosting if you can't afford a font that doesn't load on demo day.
 - **Custom favicon + title** — inline SVG favicon in `index.html` with the customer's monogram. Title = customer's tool name, never "Salesforce."
 - **One hero detail page does 80% of the work** — see [industry-playbooks.md](industry-playbooks.md) for vertical-specific names: Patient 360 (healthcare), Member 360 (FSI), Constituent 360 (public sector), Order 360 (retail), Asset 360 (field service), Engagement 360 (prof services). Tabs are vertical-specific too — sessions/notes/billing for healthcare, accounts/transactions/risk for FSI, etc. Spend most of your time here.
 - **AI Insights tab pattern** — 2×2 grid of cards. The four standard categories generalize across verticals: (1) AI-drafted artifact (note / email / summary / disclosure), (2) churn or attrition risk, (3) domain-specific signal (clinical / financial / behavioral / operational), (4) engagement signal. Each card has a small "Agentforce" pill + sparkle icon. Hover state expands inline (don't use floating popovers — they fight the animation transforms). See the playbook for vertical-specific card content.
@@ -279,13 +322,16 @@ The point: when the AE clicks the Salesforce link in the demo, a real record ope
 
 The AE will click the CRM link badge in your React app during the demo. If the Contact opens with a default Salesforce layout, that breaks the "no Salesforce chrome" narrative.
 
-**Deploy a custom Lightning Record Page (FlexiPage)** that shows the same fields you surfaced in React, organized cleanly. See [contact-record-page.md](contact-record-page.md) for the full template + per-vertical field lists.
+**Build a custom Lightning Record Page** that shows the same fields you surfaced in React, organized cleanly. See [contact-record-page.md](contact-record-page.md) for per-vertical field lists.
 
-Short version:
-1. Drop the template FlexiPage XML into `force-app/main/default/flexipages/`
-2. Swap in your vertical's custom fields
-3. Deploy
-4. ⚠️ Tell the user to **manually activate** the page (Setup → Object Manager → Contact → Lightning Record Pages → Activation → Org Default). FlexiPage activation isn't reliably deployable via metadata.
+⚠️ **Build it BY HAND in Lightning App Builder — do NOT deploy FlexiPage XML.** Two stress-test runs confirmed the XML approach is API-version-fragile and frequently undeployable in fresh scratch orgs (standard components fail "design time component information" resolution; ~8 wasted deploy attempts in one run — the biggest quota sink of the whole build). The manual UI path takes ~3 minutes and always works:
+
+1. Setup → Object Manager → Contact → Lightning Record Pages → **New** (or edit the org default)
+2. Pick a template, drag on a **Record Detail** component, add a **Field Section** with your vertical's custom fields
+3. **Save → Activation → Org Default (Desktop)** (activation isn't reliably deployable anyway)
+4. Verify by opening a seeded Contact — if a field is missing, check the Phase 5 permission set's FLS
+
+(If you absolutely must keep the page in source control, [contact-record-page.md](contact-record-page.md) has a structurally-verified minimal XML — but it may still fail on component resolution, in which case fall back to the manual build.)
 
 ### Phase 6: Build the Agentforce copilot (45 min)
 
@@ -307,16 +353,34 @@ sf agent publish authoring-bundle --api-name <AgentName> -o <alias>
 sf agent activate --api-name <AgentName> -o <alias>
 ```
 
-Grab the published agent ID (starts with `0Xx`) and paste into `src/components/<Brand>Copilot.tsx`:
+Grab the published agent ID (starts with `0Xx`) and paste into `src/components/<Brand>Copilot.tsx`.
+
+⚠️ **Pass `salesforceOrigin` explicitly — do NOT rely on auto-resolution.** The component is *supposed* to auto-resolve the org origin from `globalThis.SFDC_ENV.orgUrl` in production, but inside a deployed UI bundle that variable often only has `basePath` populated (not `orgUrl`), so the widget throws **`salesforceOrigin or frontdoorUrl is required`** and the chat silently fails to load during the demo. Resolve it yourself: the app runs on `*.lightning.force.com`, so `window.location.origin` is the correct value in-org.
 
 ```tsx
 import { AgentforceConversationClient } from '@salesforce/ui-bundle-template-feature-react-agentforce-conversation-client';
+
+// Resolve the Salesforce org origin for the ACC widget.
+// The deployed bundle runs on <my-domain>.lightning.force.com; instanceUrl
+// (my.salesforce.com) is NOT the right value here — use the page origin.
+function resolveSalesforceOrigin(): string {
+  const envOrigin = (globalThis as any).SFDC_ENV?.orgUrl as string | undefined;
+  if (envOrigin) return envOrigin;
+  if (typeof window !== 'undefined' &&
+      window.location.hostname.endsWith('.lightning.force.com')) {
+    return window.location.origin;
+  }
+  // Last resort only (e.g. unusual host): hardcode YOUR org's Lightning origin.
+  // Leave this unreached in normal in-org runs.
+  return window.location.origin;
+}
 
 export default function BrandCopilot() {
   return (
     <AgentforceConversationClient
       agentId="0Xx..."
       agentLabel="<Brand> Copilot"
+      salesforceOrigin={resolveSalesforceOrigin()}
       styleTokens={{
         fabBackground: '<brand-primary>',
         headerBlockBackground: '<brand-primary>',
@@ -331,9 +395,12 @@ export default function BrandCopilot() {
 
 Mount this once in `appLayout.tsx` so the widget floats over every page. Add `pb-24` to the `<main>` so the FAB doesn't cover content.
 
+> Note: the bundle hosts inside an Experience Site. If the widget loads but can't resolve assets/session, the ACC SDK also accepts a `sitePrefix` prop (the path segment after the host, e.g. `/demo`) — usually not needed, but reach for it if you see Lightning Out asset/routing errors.
+
 ### Phase 7: Flow + MCP + close (30 min)
 
 - **Flow:** Two good options — (a) **best if you built the Phase 4 write-back action button:** a record-triggered flow that fires the instant the button creates the Task, so one click in the custom UI visibly cascades into platform automation (auto-flag the Task as high priority). See the "Make the automation story louder" section of [salesforce-action-button.md](salesforce-action-button.md). (b) Otherwise, a schedule-triggered flow that does something the customer's current "broken Zapier" does. Either way, a Flow Builder screenshot is the safe fallback; live execution is optional and riskier. Use the `generating-flow` skill to author the `.flow-meta.xml` — don't hand-write Flow XML.
+  - ⚠️ **Pre-check Flow-MCP availability before committing to a live Flow.** The `generating-flow` skill depends on the `execute_metadata_action` tool via the `user-mcp-adaptor` MCP server, which is sometimes down. Check its status first (the MCP folder's `STATUS.md`, or just attempt a trivial call). **If it's unavailable, say so plainly and fall back to the screenshot-only Flow** — don't flail retrying. Document the intended flow in the talk track for the user to build later (e.g., record-triggered on `Task`, entry condition `Subject contains "<App> Console"`, before-save set `Priority = High`).
 - **Consolidation page:** A `Consolidation.tsx` page with a before/after layout: 5 logos in chaos on the left, the customer's branded React app on the right, arrow between. Caption: "X tools → 1 platform."
 - **MCP setup (optional, often flaky):** Configure a Salesforce Hosted MCP server + External Client App for `claude.ai`. See [mcp-claude-setup.md](mcp-claude-setup.md). **Recommendation:** show the Setup → MCP Servers page as a static slide rather than risk a live OAuth failure.
 
@@ -400,6 +467,12 @@ Write `DEMO_TALKTRACK.md` (Phase 8) with this structure, filled in with the cust
 | Direct URL to deployed app 404s | URL pattern varies — guessing is unreliable | Tell user to open App Launcher → search by app name → click |
 | React types/props using wrong vertical terminology (e.g., `patient` in an FSI build) | Cursor leaked names from CCG reference | Grep for `patient`/`clinician`/`session`; rename per the industry playbook |
 | GraphQL query returns `null` or "Cannot query field" errors | Wrong query shape (forgot `uiapi.query` wrapper or `{ value }` on fields) | See [graphql-reference.md](graphql-reference.md) for the correct Salesforce GraphQL shape |
+| Agent chat: `salesforceOrigin or frontdoorUrl is required` (console); widget never loads | `SFDC_ENV.orgUrl` empty in the deployed bundle, so ACC auto-resolution fails | Pass `salesforceOrigin={resolveSalesforceOrigin()}` explicitly (Phase 6 snippet) — use `window.location.origin` since the app runs on `.lightning.force.com` |
+| Brand font silently doesn't load (page uses a fallback font, no hard error) | Google Fonts CSP-blocked (`style-src`/`font-src` violation in console) | Deploy `CspTrustedSite` for `fonts.googleapis.com` + `fonts.gstatic.com` (style+font src), or self-host the fonts. See Phase 4 branding. |
+| `npm install` fails `ENOENT package.json` right after scaffolding | `sf template generate ui-bundle` defaulted to `--template default` (static HTML, no React) | Regenerate with `--template reactbasic` (Phase 3B) |
+| Scratch-org settings deploy fails: "object 'EinsteinGptPlatform' of type Settings does not exist" (org half-created) | Wrong scratch-def settings key (`einsteinGptPlatformSettings`) | Use `einsteinGptSettings`, or drop the `settings` block entirely and go features-only (Phase 2A) |
+| `LIMIT_EXCEEDED ... active scratch org limit` on create | Dev Hub at its active scratch-org cap (commonly 3) | `sf org list limits`; ask user which org to delete; `sf org delete scratch -o <alias> -p`; recreate (Phase 2A) |
+| FlexiPage deploy fails: "design time component information" / "componentInstance is duplicated" / "Template ... doesn't exist" | The Phase 5.5 record page is API-version-fragile; standard components often don't resolve in fresh scratch orgs | Build the record page **by hand in Lightning App Builder** instead of deploying XML. See [contact-record-page.md](contact-record-page.md). |
 
 ## Time budget (realistic)
 
@@ -422,7 +495,7 @@ For a "real" build with proper review: multiply by 3.
 
 - [industry-playbooks.md](industry-playbooks.md) — Vertical-specific recipes (FSI, retail, public sector, healthcare, field service, prof services) — START HERE for any new build
 - [agent-script-template.md](agent-script-template.md) — Full Agent Script template with hub-and-spoke pattern
-- [contact-record-page.md](contact-record-page.md) — Reusable FlexiPage template for the Salesforce-side Contact record (Phase 5.5)
+- [contact-record-page.md](contact-record-page.md) — Salesforce-side Contact record page (Phase 5.5) — build BY HAND in Lightning App Builder; XML is fragile (per-vertical field lists + optional minimal XML inside)
 - [graphql-reference.md](graphql-reference.md) — Salesforce GraphQL API shapes, codegen flow, hybrid live/static pattern (read before writing ANY GraphQL query)
 - [salesforce-action-button.md](salesforce-action-button.md) — Drop-in write-back action button (create a Task / Case / field update from the React UI via GraphQL mutation) — the highest-impact "real platform underneath" demo moment (Phase 4)
 - [mcp-claude-setup.md](mcp-claude-setup.md) — Step-by-step Claude.ai ↔ Salesforce MCP setup
