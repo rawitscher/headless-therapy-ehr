@@ -391,7 +391,7 @@ export default function BrandCopilot() {
   return (
     <AgentforceConversationClient
       agentId="0Xx..."
-      agentLabel="<Brand> Copilot"
+      agentLabel="<Brand> Agent"
       salesforceOrigin={resolveSalesforceOrigin()}
       styleTokens={{
         fabBackground: '<brand-primary>',
@@ -406,6 +406,8 @@ export default function BrandCopilot() {
 ```
 
 Mount this once in `appLayout.tsx` so the widget floats over every page. Add `pb-24` to the `<main>` so the FAB doesn't cover content.
+
+⚠️ **The widget header label (`agentLabel`) should read "`<Company> Agent`", not "Copilot."** Customers want it branded as their agent (e.g., "BARK Air Agent"). Use "Agent" in the user-facing label.
 
 > Note: the bundle hosts inside an Experience Site. If the widget loads but can't resolve assets/session, the ACC SDK also accepts a `sitePrefix` prop (the path segment after the host, e.g. `/demo`) — usually not needed, but reach for it if you see Lightning Out asset/routing errors.
 
