@@ -318,11 +318,15 @@ Use these inline; don't dump them all at once.
 > can't be set via scratch-def.json — every new org needs the manual  
 > toggle. Same for Einstein and Agentforce.
 
-### "The Agentforce chat shows 'Authentication Error'"
+### "The Agentforce chat shows 'Authentication Error' or won't load"
 
-> Setup → My Domain → Routing and Policies → Cookies → uncheck "Require
-> first party use of Salesforce cookies" → Save. The chat widget's
-> iframe can't authenticate without that.
+> Most common cause now: the chat widget needs `salesforceOrigin` passed
+> explicitly (Cursor's skill handles this in the Phase 6 Copilot
+> component — ask it to verify the `salesforceOrigin` resolver is in
+> place). If you're on an older org where the first-party-cookie setting
+> was manually turned on, also check: Setup → My Domain → Routing and
+> Policies → Cookies → uncheck "Require first party use of Salesforce
+> cookies" → Save. (That setting is off by default in new scratch orgs.)
 
 ### "The agent chat says 'Something went wrong' after I send a message"
 
