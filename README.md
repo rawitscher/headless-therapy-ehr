@@ -1,8 +1,10 @@
 # headless-therapy-ehr
 
-A reference implementation + reusable Cursor skill for building **custom-branded, "headless" Salesforce demos** that mirror vertical-SaaS UX (think TherapyNotes / nCino / ServiceNow / Toast / Tyler) on top of the platform.
+A reference implementation + a reusable agent skill (for **Cursor** and **Claude Code**) for building **custom-branded, "headless" Salesforce demos** that mirror vertical-SaaS UX (think TherapyNotes / nCino / ServiceNow / Toast / Tyler) on top of the platform.
 
-**Industry-agnostic.** The Cursor skill ships with [vertical playbooks](.cursor/skills/building-headless-salesforce-demo/industry-playbooks.md) for financial services, retail, public sector, healthcare, manufacturing/field service, and professional services — each with persona, hero page, custom fields, AI insight cards, automation wins, and brand cues. Built as a 4-hour proof of concept for a behavioral-health customer (The Counseling Center Group); the **same pattern works for any customer** that says *"we like our current UI but we know we need a real platform underneath."*
+**Industry-agnostic.** The skill ships with [vertical playbooks](.cursor/skills/building-headless-salesforce-demo/industry-playbooks.md) for financial services, retail, public sector, healthcare, manufacturing/field service, and professional services — each with persona, hero page, required visual components, custom fields, AI insight cards, automation wins, and brand cues. Built as a 4-hour proof of concept for a behavioral-health customer (The Counseling Center Group); the **same pattern works for any customer** that says *"we like our current UI but we know we need a real platform underneath."*
+
+> **Two IDE flavors, one skill.** The skill is packaged for both Cursor (`.cursor/skills/`) and Claude Code (`.claude/skills/`) — identical playbook, just install it into whichever tool you use (see Quickstart).
 
 ## What's here
 
@@ -26,7 +28,13 @@ ccg-demo/CCG_AGENT_SETUP.md                          # Agentforce setup doc for 
 
 ## Quickstart (for teammates replicating this)
 
-1. **Install the Cursor skill:**
+First, get a demo-ready **SDO** (Simple Demo Org) — request one via the `@STORM` Slack app and enable the three toggles (Einstein, Agentforce, React App Domain). The Slackbot guide walks you through it. There are **no scratch orgs and no Dev Hub** anymore.
+
+Then install the skill into your IDE of choice and start a build.
+
+**Cursor**
+
+1. Install the skill:
 
    ```bash
    mkdir -p ~/.cursor/skills
@@ -34,14 +42,27 @@ ccg-demo/CCG_AGENT_SETUP.md                          # Agentforce setup doc for 
    ```
 
 2. **Restart Cursor** so it picks up the new skill.
+3. Open a fresh Cursor chat in a new workspace and prompt (below).
 
-3. **Open a fresh Cursor chat in a new workspace** and prompt:
+**Claude Code**
 
-   > Use the `building-headless-salesforce-demo` skill to help me build a customer demo for [CUSTOMER]. They want a [TOOL]-style [PERSONA] experience. Demo is in [TIMEFRAME]. My org alias is [ALIAS].
+1. Install the skill:
 
-   Cursor will run you through scoping questions and then the 7-phase build.
+   ```bash
+   mkdir -p ~/.claude/skills
+   cp -r .claude/skills/building-headless-salesforce-demo ~/.claude/skills/
+   ```
 
-4. **For SE teams using Slackbot:** load `slackbot/SLACKBOT_GUIDE.md` as a Slackbot skill so teammates can DM Slackbot to prep a demo-ready SDO (and pick Cursor or Claude Code) before they hit the IDE.
+2. **Start a fresh `claude` session** (or `/resume`) so the skill is picked up.
+3. Open a new chat and prompt (below).
+
+**The prompt (either IDE):**
+
+> Use the `building-headless-salesforce-demo` skill to help me build a customer demo for [CUSTOMER]. They want a [TOOL]-style [PERSONA] experience. Demo is in [TIMEFRAME]. I have a ready SDO — my org alias is [ALIAS].
+
+The agent runs you through scoping questions, then the build sequence — connecting to your SDO (no toggles; those are done in Slack), building the hero surfaces, and grilling you on the UI before wiring data.
+
+**For SE teams using Slackbot:** load `slackbot/SLACKBOT_GUIDE.md` as a Slackbot skill so teammates can DM Slackbot to prep a demo-ready SDO (and pick Cursor or Claude Code) before they hit the IDE.
 
 ## The 7-phase build sequence
 
