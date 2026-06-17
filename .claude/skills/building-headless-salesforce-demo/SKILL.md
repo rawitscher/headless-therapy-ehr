@@ -38,13 +38,19 @@ Every headless customer demo built with this skill has these layers:
 6. **One automation win** — Flow Builder screenshot, optionally a working flow.
 7. **Closing consolidation page** — "5 tools → 1 platform" visual.
 
-## After Cursor restart (resume protocol)
+## Running this skill in Claude Code
 
-If you (the agent) were just installed as a skill and the user has restarted Cursor, they need to **explicitly send a message to wake you up** — Cursor doesn't auto-resume mid-flow after a restart. When you first encounter a restarted session, post this to the user:
+This skill runs in **Claude Code** (the `claude` CLI / Claude Code app). A few environment notes:
 
-> Welcome back! I see you've restarted Cursor and the skill is now loaded. Reply with anything (e.g., "ready" or "continue") and I'll pick up right where we left off — starting with the Phase 1 scoping questions.
+- **No structured question UI.** Ask the Phase 1 scoping questions conversationally, one tight block at a time, and wait for the user's reply before proceeding.
+- **Terminal-first.** You drive everything through the shell (`sf`, `npm`, `git`, `osascript`). Run commands directly rather than describing them.
+- **The org is pre-provisioned (SDO).** As of React Multi-Framework GA (June 2026) you do NOT create a scratch org or flip Setup toggles — the Slackbot prework already spun up a Simple Demo Org with Einstein, Agentforce, and the React App Domain enabled. In Phase 2 you just get the user authed into it and confirm it's ready (see Phase 2). The one manual thing you need from the user there is logging in.
 
-Once they reply, proceed normally. Do not assume any prior state — re-ask Phase 1 scoping questions cleanly.
+## After a Claude Code restart (resume protocol)
+
+If the user closed and reopened Claude Code (or started a fresh session) mid-build, you will not automatically remember prior state. When you suspect a resumed session, do not assume any prior progress — instead run the **"Resuming a partial build"** verification below, then re-ask the Phase 1 scoping questions cleanly before building anything new.
+
+If the user resumes the session with `claude --resume` (or `--continue`), your prior context is restored — in that case just confirm where you left off in one line and continue.
 
 ## Resuming a partial build (verify, don't rebuild)
 
@@ -60,9 +66,9 @@ Never blindly rebuild over a partially-complete org — at best it wastes quota,
 
 ## How to communicate while running this skill (IMPORTANT)
 
-The audience is busy, often non-technical SEs/AEs reading in a chat panel. Three rules for every message you send during the build:
+The audience is busy, often non-technical SEs/AEs reading in a terminal/chat panel. Three rules for every message you send during the build:
 
-1. **Put the user's action items LAST.** Anything the user must DO (Setup toggles, a confirmation, an answer, the restart) goes at the very bottom of your message, as the final thing they read — never buried above status text or explanation. A teammate had to scroll up to find the Setup toggles because they were above other agent output. The 🔔 **WAITING ON YOU** banner (below) should be the literal last block in the message.
+1. **Put the user's action items LAST.** Anything the user must DO (Setup toggles, a confirmation, an answer, a restart) goes at the very bottom of your message, as the final thing they read — never buried above status text or explanation. A teammate had to scroll up to find the Setup toggles because they were above other agent output. The 🔔 **WAITING ON YOU** banner (below) should be the literal last block in the message.
 2. **Be concise — don't write essays as you progress.** Lead with a one-line status of what you just did, then the ask. Skip play-by-play narration, long recaps, and re-explaining things you already explained. If you must include reference detail, keep it short or put it in a file, not the chat. Err on the side of brevity at every phase.
 3. **Make the takeaway unmistakable at the end.** When you finish (Phase 8) or hand off a deliverable, state the deliverable plainly as the closing item (see Phase 8 for the demo flow / click-path handoff).
 
@@ -70,19 +76,19 @@ These apply throughout — not just at wait points.
 
 ## Nudge the user whenever you're blocked on them (IMPORTANT)
 
-This skill is often run by busy sales leaders who walk away from their laptop mid-build. Several steps require the human to do something (flip a Setup toggle, restart Cursor, activate a page, answer a scoping question). If the agent silently waits, the build stalls for minutes or hours.
+This skill is often run by busy sales leaders who walk away from their laptop mid-build. Several steps require the human to do something (flip a Setup toggle, answer a scoping question, restart the session). If the agent silently waits, the build stalls for minutes or hours.
 
-**Whenever you stop and wait for the user — a question, a confirmation, a manual Setup action, or a restart — fire a desktop notification + sound so they look back at Cursor.** Run this immediately before (or as part of) the message where you hand control back to the user:
+**Whenever you stop and wait for the user — a question, a confirmation, or a manual Setup action — fire a desktop notification + sound so they look back at the terminal.** Run this immediately before (or as part of) the message where you hand control back to the user:
 
 ```bash
-osascript -e 'display notification "<short what-I-need>" with title "Headless Demo Build" subtitle "Cursor needs you" sound name "Glass"'
+osascript -e 'display notification "<short what-I-need>" with title "Headless Demo Build" subtitle "Claude Code needs you" sound name "Glass"'
 ```
 
-Replace `<short what-I-need>` with a specific ask, e.g. `"Flip the Agentforce toggle in Setup, then say done"` or `"Restart Cursor so the skill loads"`. Keep it under ~8 words.
+Replace `<short what-I-need>` with a specific ask, e.g. `"Log into your SDO via the CLI"` or `"Answer the scoping questions"`. Keep it under ~8 words.
 
 Rules:
 - Fire it **every time** you yield to the user for a manual action or a required answer — not for trivial FYIs.
-- It's macOS-only (`osascript`). On Linux, use `notify-send "Cursor needs you" "<short what-I-need>"` and `printf '\a'` for a bell. On Windows, just print a loud banner (below). If the notification command errors, ignore it and continue — never block the build on a failed nudge.
+- It's macOS-only (`osascript`). On Linux, use `notify-send "Claude Code needs you" "<short what-I-need>"` and `printf '\a'` for a bell. On Windows, just print a loud banner (below). If the notification command errors, ignore it and continue — never block the build on a failed nudge.
 - Always **also** print a visible banner in chat so the ask is obvious even if they missed the notification:
 
 > 🔔 **WAITING ON YOU** — <one-line description of exactly what to do>. Reply here when done.
@@ -95,7 +101,7 @@ Follow this order. Skipping ahead causes rework.
 
 ### Phase 1: Scope with the AE (15 min)
 
-Ask the AE these questions before writing code. Use the AskQuestion tool if available, otherwise ask conversationally.
+Ask the AE these questions before writing code. Ask conversationally — keep it to one tight block and wait for the reply.
 
 **Step 1A — Identify the customer (hard gate, ask FIRST):**
 
@@ -274,7 +280,7 @@ If any of these five is missing, the hero page isn't done. The per-vertical **Re
 
 > 💡 **Mirror the inspiration tool's density.** Pull up the competitor/inspiration tool the AE named in Phase 1 (and any screenshots they shared). Match its information density and component vocabulary, not just its palette. Tune the amount packed onto the page to the **demo-room audience** from Phase 1: frontline personas → dense and operational; executives → fewer, bigger headline metrics.
 
-⚠️ **CRITICAL: vertical-correct naming.** The CCG reference build is healthcare, so terms like `Patient`, `patientId`, `clinicianName`, `Session`, `PHQ9_Score` are ALL OVER the reference code. **Do NOT carry those names into a non-healthcare build.** A teammate reported this exact bug: they built a "high-tech" customer demo and Cursor named React variables, types, and props with `patient` / `clinician` / `session` everywhere.
+⚠️ **CRITICAL: vertical-correct naming.** The CCG reference build is healthcare, so terms like `Patient`, `patientId`, `clinicianName`, `Session`, `PHQ9_Score` are ALL OVER the reference code. **Do NOT carry those names into a non-healthcare build.** A teammate reported this exact bug: they built a "high-tech" customer demo and the agent named React variables, types, and props with `patient` / `clinician` / `session` everywhere.
 
 Before writing ANY component, types, or data file:
 1. Re-read the customer's vertical in [industry-playbooks.md](industry-playbooks.md)
@@ -450,7 +456,7 @@ Mount this once in `appLayout.tsx` so the widget floats over every page. Add `pb
 ### Phase 7: Flow + MCP + close (30 min)
 
 - **Flow:** Two good options — (a) **best if you built the Phase 4 write-back action button:** a record-triggered flow that fires the instant the button creates the Task, so one click in the custom UI visibly cascades into platform automation (auto-flag the Task as high priority). See the "Make the automation story louder" section of [salesforce-action-button.md](salesforce-action-button.md). (b) Otherwise, a schedule-triggered flow that does something the customer's current "broken Zapier" does. Either way, a Flow Builder screenshot is the safe fallback; live execution is optional and riskier. Use the `generating-flow` skill to author the `.flow-meta.xml` — don't hand-write Flow XML.
-  - ⚠️ **Pre-check Flow-MCP availability before committing to a live Flow.** The `generating-flow` skill depends on the `execute_metadata_action` tool via the `user-mcp-adaptor` MCP server, which is sometimes down. Check its status first (the MCP folder's `STATUS.md`, or just attempt a trivial call). **If it's unavailable, say so plainly and fall back to the screenshot-only Flow** — don't flail retrying. Document the intended flow in the talk track for the user to build later (e.g., record-triggered on `Task`, entry condition `Subject contains "<App> Console"`, before-save set `Priority = High`).
+  - ⚠️ **Pre-check Flow-MCP availability before committing to a live Flow.** The `generating-flow` skill depends on the `execute_metadata_action` tool from the `mcp-adaptor` MCP server, which is sometimes down. Check it's reachable first (attempt a trivial call, or check the server's status). **If it's unavailable, say so plainly and fall back to the screenshot-only Flow** — don't flail retrying. Document the intended flow in the talk track for the user to build later (e.g., record-triggered on `Task`, entry condition `Subject contains "<App> Console"`, before-save set `Priority = High`).
 - **Consolidation page:** A `Consolidation.tsx` page with a before/after layout: 5 logos in chaos on the left, the customer's branded React app on the right, arrow between. Caption: "X tools → 1 platform."
 - **MCP setup (optional, often flaky):** Configure a Salesforce Hosted MCP server + External Client App for `claude.ai`. See [mcp-claude-setup.md](mcp-claude-setup.md). **Recommendation:** show the Setup → MCP Servers page as a static slide rather than risk a live OAuth failure.
 
@@ -513,7 +519,7 @@ Write `DEMO_TALKTRACK.md` (Phase 8) with this structure, filled in with the cust
 | Claude MCP `OAUTH_APPROVAL_ERROR_GENERIC` after consent | ECA missing `mcp_api` scope | Add `Access Salesforce hosted MCP servers (mcp_api)` to selected scopes |
 | Deployed UI Bundle renders a blank page in the org | `ui-bundle.json` has `"outputDir": "src"` instead of `"dist"` | Open `ui-bundle.json`, set `"outputDir": "dist"`, redeploy |
 | Direct URL to deployed app 404s | URL pattern varies — guessing is unreliable | Tell user to open App Launcher → search by app name → click |
-| React types/props using wrong vertical terminology (e.g., `patient` in an FSI build) | Cursor leaked names from CCG reference | Grep for `patient`/`clinician`/`session`; rename per the industry playbook |
+| React types/props using wrong vertical terminology (e.g., `patient` in an FSI build) | Reference names leaked from CCG reference | Grep for `patient`/`clinician`/`session`; rename per the industry playbook |
 | GraphQL query returns `null` or "Cannot query field" errors | Wrong query shape (forgot `uiapi.query` wrapper or `{ value }` on fields) | See [graphql-reference.md](graphql-reference.md) for the correct Salesforce GraphQL shape |
 | Agent chat: `salesforceOrigin or frontdoorUrl is required` (console); widget never loads | `SFDC_ENV.orgUrl` empty in the deployed bundle, so ACC auto-resolution fails | Pass `salesforceOrigin={resolveSalesforceOrigin()}` explicitly (Phase 6 snippet) — use `window.location.origin` since the app runs on `.lightning.force.com` |
 | Brand font silently doesn't load (page uses a fallback font, no hard error) | Google Fonts CSP-blocked (`style-src`/`font-src` violation in console) | Deploy `CspTrustedSite` for `fonts.googleapis.com` + `fonts.gstatic.com` (style+font src), or self-host the fonts. See Phase 4 branding. |
@@ -550,9 +556,9 @@ For a "real" build with proper review: multiply by 3.
 
 ## Model recommendation
 
-- **First time running this skill:** use **Claude Sonnet or Opus** explicitly (not Auto mode). The skill is validated against Sonnet; smaller models occasionally skip steps or hallucinate Agent Script syntax. Cursor → model picker → pick Sonnet.
-- **Subsequent runs by experienced teammates:** **Auto mode** is fine.
-- **Quota awareness:** a full 4-hour build consumes meaningful usage — roughly 10–30% of a monthly Cursor Pro quota depending on debugging loops. Tell the user to check Settings → Plans before starting a build, especially if they're mid-month.
+- **First time running this skill:** use a frontier model explicitly — **Claude Sonnet or Opus** (e.g., `claude --model opus` / `--model sonnet`, or set it in the model picker). The skill is validated against Sonnet; smaller/faster models occasionally skip steps or hallucinate Agent Script syntax.
+- **Subsequent runs by experienced teammates:** the default model is fine.
+- **Quota awareness:** a full 4-hour build consumes meaningful usage. Tell the user to check their plan/usage limits before starting a long build, especially if they're near a reset boundary.
 
 ## Don'ts
 
