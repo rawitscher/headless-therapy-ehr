@@ -241,14 +241,63 @@ This is a real bug that caused a confusing "blank app on deploy, but works local
 
 **Always test by deploying to the org and clicking through there.** For pure visual iteration (layout, colors, copy — anything that doesn't involve the chat widget), `npm run dev` is fine, but plan to deploy+test in the org every 2–3 changes.
 
-**Step 3D — Build + deploy:**
+**Step 3C.5 — Create the companion `CustomApplication` (REQUIRED — this is what actually makes the app launchable).** ⚠️⚠️
+
+A `UIBundle` alone is **not** a launchable app. The bundle holds your React code; a **companion `CustomApplication` metadata file** is what registers the App Launcher route (the `AppDefinition` / `AppMenuItem`). Deploy only the bundle and it will deploy successfully, show as an active `UIBundle` in the Tooling API, and be completely un-launchable — nothing in the App Launcher, and `/lightning/n/<AppName>` returns "Page doesn't exist." This exact gap cost a teammate an entire session (deploys "succeeded" repeatedly while the app never appeared).
+
+Create `force-app/main/default/applications/<AppName>.app-meta.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><App Label></label>
+    <uiType>Lightning</uiType>
+    <uiBundle>c__<AppName></uiBundle>
+    <formFactors>Large</formFactors>
+    <navType>Standard</navType>
+</CustomApplication>
+```
+
+⚠️ **The `<uiBundle>` value must be the fully-qualified, case-sensitive bundle name.** In an SDO (no managed-package namespace) that means the **`c__` prefix**: `c__<AppName>` (e.g., `c__SmartCurrencyConsole`), matching the `UIBundle` DeveloperName exactly, including case. The bare name (no prefix) **deploys fine but renders "Page not found" at runtime** — the single most confusing failure mode here. Wrong case (`c__reactRecipes` vs `c__ReactRecipes`) fails the same way.
+
+Also confirm the bundle's `.uibundle-meta.xml` has `<target>CustomApplication</target>` (that's the default; `AppLauncher` was the beta target and is rejected in API v67.0+), and that `sourceApiVersion` in `sfdx-project.json` is `67.0` or higher (`CustomApplication.uiBundle` doesn't exist below v67.0).
+
+**Step 3C.6 — Grant app visibility (a new `CustomApplication` is hidden by default, even for admins).** After it deploys, the app still won't appear in the launcher until the running user's profile can see it. Add `applicationVisibilities` to their profile (System Administrator = `Admin`):
+
+```xml
+<!-- force-app/main/default/profiles/Admin.profile-meta.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+    <applicationVisibilities>
+        <application><AppName></application>
+        <default>false</default>
+        <visible>true</visible>
+    </applicationVisibilities>
+</Profile>
+```
+
+A partial profile with only `applicationVisibilities` is additive — it won't clobber other profile settings. (Alternatively, grant access via a permission set's App Assignment.)
+
+**Step 3D — Build + deploy (bundle + app together).** ⚠️ Deploy the `UIBundle` and `CustomApplication` **in the same command** — the runtime route only registers when they land together (deploying the app before the bundle exists also fails with "no UIBundle named X found").
 
 ```bash
 npm run build
-sf project deploy start --source-dir force-app/main/default/uiBundles/<AppName> -o <alias>
+sf project deploy start \
+  --source-dir force-app/main/default/uiBundles/<AppName> \
+  --source-dir force-app/main/default/applications \
+  --source-dir force-app/main/default/profiles \
+  -o <alias>
 ```
 
 A full UI bundle redeploy takes ~20–30 seconds. Budget this into the loop.
+
+Then confirm the launcher entry actually registered and is visible to the user:
+
+```bash
+sf data query -o <alias> --query "SELECT Label, IsAccessible, IsVisible FROM AppMenuItem WHERE Name='<AppName>'"
+```
+
+`IsAccessible: true` + `IsVisible: true` → it'll show in the App Launcher. `IsAccessible: false` → visibility not granted (Step 3C.6). No row at all → the `CustomApplication` didn't register (Step 3C.5).
 
 **Step 3E — Tell the user how to open the deployed app.**
 
@@ -256,7 +305,7 @@ A full UI bundle redeploy takes ~20–30 seconds. Budget this into the loop.
 
 > Open your SDO → click the **App Launcher** (9-dot grid icon, top left) → search for **<AppName>** → click to launch.
 
-If the app doesn't show up in App Launcher, the deploy probably failed silently — check `sf project deploy report` and the org's Setup → Deployment Status page.
+If the app doesn't show up in App Launcher, the deploy did **not** fail — the usual causes are: (a) no companion `CustomApplication` was deployed (Step 3C.5), (b) the `<uiBundle>` reference is missing the `c__` prefix or has the wrong case, so it launches to "Page not found" (Step 3C.5), or (c) app visibility wasn't granted (Step 3C.6). Run the `AppMenuItem` query from Step 3D to tell these apart before touching anything else.
 
 ### Phase 4: Build the hero surfaces (1.5 hr — the bulk of the work)
 
@@ -519,6 +568,11 @@ Write `DEMO_TALKTRACK.md` (Phase 8) with this structure, filled in with the cust
 | Claude MCP `OAUTH_APPROVAL_ERROR_GENERIC` after consent | ECA missing `mcp_api` scope | Add `Access Salesforce hosted MCP servers (mcp_api)` to selected scopes |
 | Deployed UI Bundle renders a blank page in the org | `ui-bundle.json` has `"outputDir": "src"` instead of `"dist"` | Open `ui-bundle.json`, set `"outputDir": "dist"`, redeploy |
 | Direct URL to deployed app 404s | URL pattern varies — guessing is unreliable | Tell user to open App Launcher → search by app name → click |
+| Deploy succeeds + `UIBundle` active, but app is NOT in App Launcher and `/lightning/n/<App>` says "Page doesn't exist" | No companion `CustomApplication` — the bundle alone registers no launcher route | Add `applications/<App>.app-meta.xml` with `<uiBundle>` and deploy it WITH the bundle (Phase 3 Steps 3C.5 + 3D) |
+| App appears in App Launcher but opens to **"Page not found"** | `<uiBundle>` reference isn't the fully-qualified/case-exact name | Set `<uiBundle>c__<AppName></uiBundle>` — SDO/no-namespace needs the `c__` prefix and it's case-sensitive; redeploy |
+| App deployed but still missing from App Launcher, even for the admin | New `CustomApplication` is hidden by default | Grant `applicationVisibilities` on the profile (or a permission set App Assignment) — Phase 3 Step 3C.6 |
+| Changed `<uiBundle>` but app stays broken / `one:noNavItems` in browser | Stale `AppMenuItem` from the old reference doesn't regenerate | `sf project delete source` BOTH `UIBundle` + `CustomApplication`, then redeploy them together |
+| `Invalid Target value 'AppLauncher'` on deploy | Beta-era target in `.uibundle-meta.xml` | Change `<target>` to `CustomApplication`; ensure `sourceApiVersion` ≥ 67.0 |
 | React types/props using wrong vertical terminology (e.g., `patient` in an FSI build) | Reference names leaked from CCG reference | Grep for `patient`/`clinician`/`session`; rename per the industry playbook |
 | GraphQL query returns `null` or "Cannot query field" errors | Wrong query shape (forgot `uiapi.query` wrapper or `{ value }` on fields) | See [graphql-reference.md](graphql-reference.md) for the correct Salesforce GraphQL shape |
 | Agent chat: `salesforceOrigin or frontdoorUrl is required` (console); widget never loads | `SFDC_ENV.orgUrl` empty in the deployed bundle, so ACC auto-resolution fails | Pass `salesforceOrigin={resolveSalesforceOrigin()}` explicitly (Phase 6 snippet) — use `window.location.origin` since the app runs on `.lightning.force.com` |
